@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { generateOllamaStream } from '@/lib/ollama'
+import { generateGeminiStream } from '@/lib/gemini'
 import {
   MODEL_CONFIG,
   buildExtractionPrompt,
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
               ]
 
               let accumulatedResponse = ''
-              await generateOllamaStream(
+              await generateGeminiStream(
                 {
                   messages,
                   temperature: MODEL_CONFIG.temperature,
@@ -95,8 +95,8 @@ export async function POST(req: NextRequest) {
               if (parsedExtraction && Array.isArray(parsedExtraction.insights)) {
                 extractedInsights = parsedExtraction.insights
               }
-            } catch (ollamaErr) {
-              console.error('[API Analyze] Extraction failed:', ollamaErr)
+            } catch (extractErr) {
+              console.error('[API Analyze] Extraction failed:', extractErr)
               extractionFailed = true
             }
           }
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
               await new Promise((r) => setTimeout(r, 100))
             }
           } else if (extractionFailed) {
-            sendError('AI extraction failed. Please check your Ollama API key and try again.')
+            sendError('AI extraction failed. Please check your Gemini API key and try again.')
             sendDone()
             controller.close()
             return
@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
               ]
 
               let accumulatedReportRaw = ''
-              await generateOllamaStream(
+              await generateGeminiStream(
                 {
                   messages,
                   temperature: MODEL_CONFIG.temperature,
