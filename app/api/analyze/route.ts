@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { generateGeminiStream } from '@/lib/gemini'
+import { generateStream } from '@/lib/providers'
 import {
   MODEL_CONFIG,
   buildExtractionPrompt,
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
               ]
 
               let accumulatedResponse = ''
-              await generateGeminiStream(
+              await generateStream(
                 {
                   messages,
                   temperature: MODEL_CONFIG.temperature,
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
               await new Promise((r) => setTimeout(r, 100))
             }
           } else if (extractionFailed) {
-            sendError('AI extraction failed. Please check your Gemini API key and try again.')
+            sendError('AI extraction failed. Please check your API key / model configuration and try again.')
             sendDone()
             controller.close()
             return
@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
               ]
 
               let accumulatedReportRaw = ''
-              await generateGeminiStream(
+              await generateStream(
                 {
                   messages,
                   temperature: MODEL_CONFIG.temperature,
