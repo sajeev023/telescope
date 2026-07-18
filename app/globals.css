@@ -1,0 +1,38 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply h-full;
+  }
+
+  body {
+    @apply h-full bg-background text-text-primary antialiased;
+  }
+
+  #__next {
+    @apply h-full flex flex-col;
+  }
+}
+
+@layer utilities {
+  /* Custom scrollbar styling */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-surface;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full hover:bg-text-secondary transition-colors;
+  }
+
+  /* Firefox scrollbar */
+  * {
+    scrollbar-color: theme('colors.border') theme('colors.surface');
+    scrollbar-width: thin;
+  }
+}
