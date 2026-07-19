@@ -1,10 +1,49 @@
 import { z } from 'zod'
 
-const segmentSchema = z.enum(['smb', 'enterprise', 'freelancer', 'general'])
+const segmentSchema = z.preprocess(
+  (val) => {
+    if (typeof val === 'string') {
+      const lower = val.toLowerCase().trim()
+      if (['smb', 'enterprise', 'freelancer', 'general'].includes(lower)) {
+        return lower
+      }
+      if (lower === 'small business' || lower.includes('smb')) return 'smb'
+      if (lower.includes('enterprise')) return 'enterprise'
+      if (lower.includes('freelancer') || lower.includes('freelance')) return 'freelancer'
+      return 'general'
+    }
+    return 'general'
+  },
+  z.enum(['smb', 'enterprise', 'freelancer', 'general'])
+)
 
-const severitySchema = z.enum(['critical', 'high', 'medium', 'low', 'positive'])
+const severitySchema = z.preprocess(
+  (val) => {
+    if (typeof val === 'string') {
+      const lower = val.toLowerCase().trim()
+      if (['critical', 'high', 'medium', 'low', 'positive'].includes(lower)) {
+        return lower
+      }
+      return 'medium'
+    }
+    return 'medium'
+  },
+  z.enum(['critical', 'high', 'medium', 'low', 'positive'])
+)
 
-const effortSchema = z.enum(['low', 'medium', 'high'])
+const effortSchema = z.preprocess(
+  (val) => {
+    if (typeof val === 'string') {
+      const lower = val.toLowerCase().trim()
+      if (['low', 'medium', 'high'].includes(lower)) {
+        return lower
+      }
+      return 'medium'
+    }
+    return 'medium'
+  },
+  z.enum(['low', 'medium', 'high'])
+)
 
 const reportMetadataSchema = z.object({
   project_name: z.string(),
