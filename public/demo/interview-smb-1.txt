@@ -1,0 +1,24 @@
+INTERVIEW TRANSCRIPT: SMB Customer Research
+Date: July 15, 2026
+Participant: Maria Chen, Owner of GreenLeaf Marketing (12 employees)
+Interviewer: Research Team
+
+Q: Tell me about your experience with our product over the last 3 months.
+
+Maria: Honestly, it's been a mixed bag. The core functionality is solid - when it works, it saves us a ton of time on client reporting. But the setup process was brutal. It took us almost 3 weeks to get everything configured properly, and I had to pull my best developer off client work for most of that time. For a small agency like ours, that's a real cost.
+
+Q: What was the hardest part of setup?
+
+Maria: The integrations. We use HubSpot and QuickBooks, and getting those to talk to your platform required way more manual configuration than we expected. The documentation was there, but it assumed we had an enterprise IT team. We don't. It's just me and my operations manager figuring things out at 9 PM.
+
+Q: What's working well?
+
+Maria: Once we got past the setup, the automated reporting has been a game-changer. What used to take us 2 days of manual data pulling and formatting now happens in about 20 minutes. Our clients have noticed the improvement in report quality too. And the templates are beautiful - we've actually won new business because our proposals look more professional now.
+
+Q: What would make you recommend us to other SMB owners?
+
+Maria: Fix the onboarding. If you could get the setup time down to under a week, or even better, offer a done-with-you setup package, I'd tell every agency owner I know. Also, the pricing is right at the edge of what we can justify. At $299/month we're constantly evaluating whether the time savings are worth it. A starter tier around $149 would make it a no-brainer.
+
+Q: Any other pain points?
+
+Maria: Customer support is slow. I get that we're not your biggest account, but when something breaks, we're dead in the water. Last month our reports stopped generating and it took 3 days to get a response. Three days without client reports is an eternity for an agency. Even just acknowledging the ticket within a few hours would make a huge difference.

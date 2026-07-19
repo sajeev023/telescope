@@ -1,35 +1,49 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter_Tight, Instrument_Serif, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
+import { SiteNav } from '@/components/site/Nav'
+import { SiteFooter } from '@/components/site/Footer'
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
+const interTight = Inter_Tight({
+  subsets: ['latin'],
+  variable: '--font-inter-tight',
+  display: 'swap',
+})
+
+const instrumentSerif = Instrument_Serif({
+  subsets: ['latin'],
+  weight: '400',
+  style: ['normal', 'italic'],
+  variable: '--font-instrument-serif',
+  display: 'swap',
+})
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-jetbrains-mono',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
-  title: 'Telescope - AI Research Synthesis',
-  description: 'Advanced AI-powered research synthesis and analysis tool',
-}
-
-function TelescopeIcon() {
-  return (
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="w-6 h-6"
-    >
-      <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="2" />
-      <circle cx="18" cy="7" r="5" stroke="currentColor" strokeWidth="2" />
-      <path
-        d="M12 7L15 12M12 7L9 12"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <circle cx="12" cy="19" r="4" stroke="currentColor" strokeWidth="2" />
-    </svg>
-  )
+  title: 'Telescope — Turn customer conversations into actionable insight',
+  description:
+    'Telescope is an AI-powered research synthesis platform. Upload interviews, support calls, and notes — Telescope reads, clusters, and produces boardroom-ready reports.',
+  metadataBase: new URL('https://telescope.research'),
+  icons: {
+    icon: '/favicon.svg',
+  },
+  openGraph: {
+    title: 'Telescope — Turn customer conversations into actionable insight',
+    description:
+      'AI-powered research synthesis. Evidence over opinions. Trust over hallucination.',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Telescope — AI Research Synthesis',
+    description:
+      'AI-powered research synthesis. Evidence over opinions. Trust over hallucination.',
+  },
 }
 
 export default function RootLayout({
@@ -38,26 +52,17 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`dark ${inter.variable}`}>
-      <body className={`${inter.className} bg-background text-text-primary antialiased`}>
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-md border-b border-border">
-          <div className="px-6 py-4 flex items-center justify-between max-w-7xl mx-auto w-full">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-accent to-accent-hover">
-                <TelescopeIcon />
-              </div>
-              <span className="text-lg font-semibold text-text-primary">
-                Telescope
-              </span>
-            </div>
-            <div className="text-sm text-text-secondary">
-              FlowBoard Research · July 2026
-            </div>
-          </div>
-        </nav>
-        <main className="flex-1 pt-14">
-          {children}
-        </main>
+    <html
+      lang="en"
+      className={`dark ${interTight.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable}`}
+    >
+      <body className="min-h-full flex flex-col">
+        <a href="#main-content" className="skip-link">
+          Skip to content
+        </a>
+        <SiteNav />
+        <main id="main-content" className="flex-1 pt-16">{children}</main>
+        <SiteFooter />
       </body>
     </html>
   )

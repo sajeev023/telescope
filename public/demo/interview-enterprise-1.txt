@@ -1,0 +1,28 @@
+INTERVIEW TRANSCRIPT: Enterprise Customer Research
+Date: July 14, 2026
+Participant: Sarah Mitchell, VP of Operations at Meridian Financial (2,400 employees)
+Interviewer: Research Team
+
+Q: You've been using our platform for 6 months now. How's it going?
+
+Sarah: Overall, it's been positive. We evaluated 7 vendors before choosing you, and your platform was the only one that could handle our data volume without performance degradation. That's still true. We're processing about 50,000 transactions a day through the system and response times have stayed under 2 seconds.
+
+Q: What was the procurement and implementation process like?
+
+Sarah: Longer than we'd hoped. The security review took 4 months because your SOC 2 documentation was incomplete on the first submission. For enterprise deals, that's table stakes - you need to have your compliance documentation ready to go. The actual implementation was smoother once we got through legal. Your solutions engineering team was excellent, especially David. He understood our architecture within the first week.
+
+Q: What features are most valuable to your team?
+
+James: The role-based access control is critical for us. We have teams across 4 countries with different data privacy requirements, and your RBAC system lets us enforce those boundaries precisely. The audit logging has also been essential for our compliance team. Every data access and modification is traceable, which makes our SOC 2 audits much less painful.
+
+Q: What's not working?
+
+Sarah: The API rate limits are becoming a problem. We have automated workflows that pull data from your system every 15 minutes, and during peak hours we're hitting the 1,000 requests/hour cap. We've had to build our own caching layer to work around it. For an enterprise customer paying what we're paying, rate limits shouldn't be the bottleneck.
+
+Q: What about the pricing model?
+
+Sarah: The per-seat pricing is fine for our core users, but we have about 200 people who need read-only access to dashboards, and paying full seat price for them doesn't make sense. A viewer license tier would save us about $40,000 a year. I've mentioned this to our account manager three times and haven't gotten a clear answer on whether it's on the roadmap.
+
+Q: What would make you a reference customer?
+
+Sarah: Fix the rate limits, add a viewer tier, and give us a real SLA. Your current 99.5% uptime guarantee doesn't match what we need for mission-critical financial operations. 99.9% with penalties would make me comfortable enough to recommend you to peers.

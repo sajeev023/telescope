@@ -1,0 +1,28 @@
+INTERVIEW TRANSCRIPT: SMB Customer Research
+Date: July 16, 2026
+Participant: James Wilson, Founder of TechBridge Solutions (8 employees)
+Interviewer: Research Team
+
+Q: How did you discover our product?
+
+James: A colleague mentioned it at a local startup meetup. He said it helped his team stop drowning in spreadsheets, which is exactly where we were. I signed up for the trial that same night.
+
+Q: And how was the trial experience?
+
+James: Frustrating, to be honest. The product itself is clearly powerful, but the trial is too short. 7 days isn't enough to evaluate something like this when you're also running a business. I barely got through the basic setup before the trial expired. I almost didn't convert because I hadn't seen enough value yet. A 14-day trial or a freemium tier would have made the decision much easier.
+
+Q: What convinced you to convert despite that?
+
+James: Stubbornness, partly. I could see the potential. And my team was spending 15 hours a week on manual data compilation. The math worked out even if the trial didn't give me enough time to prove it. But I had to take a leap of faith, and most small business owners won't do that.
+
+Q: What's your biggest frustration now?
+
+James: The reporting customization is too rigid. We have specific ways we need to present data to our clients, and your templates force us into a structure that doesn't always fit. I can't rearrange sections or add custom metrics without exporting to Excel and rebuilding. That defeats the purpose. If we could drag and drop report sections or add custom calculation fields, it would be perfect.
+
+Q: What do you like most?
+
+James: The collaboration features. My whole team can work on the same report simultaneously, and the comment system actually works better than Google Docs for our use case. The version history has saved us multiple times when someone accidentally overwrote something. That part feels like enterprise-grade software at an SMB price.
+
+Q: Would you renew?
+
+James: Probably, but I'm looking at alternatives. There's a new tool called ReportStack that's cheaper and has more flexible templates. They don't have your collaboration features though, which is what's keeping me here. If you added template flexibility before my renewal date, I'd commit to an annual plan.

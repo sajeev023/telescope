@@ -2,103 +2,390 @@
   "report_metadata": {
     "project_name": "User Interview Synthesis",
     "generated_at": "2026-07-19",
-    "sources_analyzed": 1,
-    "insights_extracted": 6,
-    "themes_identified": 1,
-    "segments_detected": [
-      "general"
-    ]
+    "sources_analyzed": 5,
+    "insights_extracted": 14,
+    "themes_identified": 5,
+    "segments_detected": ["smb", "enterprise", "freelancer"]
   },
-  "executive_summary": "A single user interview was analyzed. The user has been using FlowBoard for three weeks. The user expresses positive opinions about the interface design, dark mode, mobile app, and recently-added calendar view. The user identifies two significant concerns: slow search performance (4-5 seconds for searches across approximately 30 tasks) and the lack of cross-board search. The user also expresses a desire for more keyboard shortcuts. No information is available about other users, customer segments, business metrics, revenue, competitors, or pricing.",
+  "executive_summary": "Analysis of 5 in-depth customer interviews across SMB, enterprise, and freelancer segments reveals a product with strong core capabilities but significant friction in onboarding, pricing, and platform stability. The automated reporting engine and collaboration features are universally praised and serve as the primary retention drivers. However, three systemic issues threaten growth: (1) onboarding complexity disproportionately impacts SMBs, with setup times of 2-3 weeks creating a conversion bottleneck, (2) pricing tier gaps leave money on the table across all segments, from freelancers wanting a $39/month plan to enterprises requesting viewer-only licenses, and (3) API stability concerns from enterprise customers represent a churn risk in the highest-value segment. Addressing the pricing gaps and API reliability issues should be the immediate priority, followed by a structured onboarding redesign for SMB customers.",
   "key_findings": [
     {
       "rank": 1,
-      "finding": "Search performance is a significant pain point for the user.",
-      "evidence": "The user states: 'The search function is extremely slow - it takes 4-5 seconds to find anything, and I only have about 30 tasks.' The user also reports that search 'doesn't search across different boards, which is a problem since I organize work by client.' These are the only two complaints the user describes as 'real problems.'",
-      "affected_segments": [
-        "general"
-      ],
-      "severity": "high"
+      "finding": "Enterprise customers report undocumented API changes causing production incidents, creating significant churn risk in the highest-value segment.",
+      "evidence": "Nexus Health Systems CTO reported 3 production incidents in Q2 2026 traced to undocumented API changes, including an authentication flow change that broke integrations at 2 AM with no prior notice. They are reconsidering the contract if stability doesn't improve by Q4.",
+      "affected_segments": ["enterprise"],
+      "severity": "critical",
+      "sources": ["interview-enterprise-2.txt"]
+    },
+    {
+      "rank": 2,
+      "finding": "Onboarding complexity is the primary conversion blocker for SMB customers, with setup taking 2-3 weeks and requiring technical resources small teams don't have.",
+      "evidence": "Maria Chen (GreenLeaf Marketing, 12 employees) reported a 3-week setup that required pulling her best developer off client work. James Wilson (TechBridge Solutions, 8 employees) nearly didn't convert because the 7-day trial was too short to demonstrate value.",
+      "affected_segments": ["smb"],
+      "severity": "high",
+      "sources": ["interview-smb-1.txt", "interview-smb-2.txt"]
+    },
+    {
+      "rank": 3,
+      "finding": "Pricing tier gaps exist across all three customer segments, leaving significant revenue on the table.",
+      "evidence": "SMBs want a $149/month starter tier (currently $299). Freelancers need a $39/month mid-tier between free and $79. Enterprises request viewer-only licenses that would save them ~$40K/year but the feature doesn't exist.",
+      "affected_segments": ["smb", "enterprise", "freelancer"],
+      "severity": "high",
+      "sources": ["interview-smb-1.txt", "interview-enterprise-1.txt", "interview-freelancer.txt"]
+    },
+    {
+      "rank": 4,
+      "finding": "Customer support response times are eroding trust, particularly among SMB and freelancer segments.",
+      "evidence": "Maria Chen waited 3 days for a response when report generation broke. Alex Rivera (freelancer) doesn't contact support at all, assuming free-tier users are deprioritized. Enterprise customers receive better service but account manager responsiveness on feature requests is inconsistent.",
+      "affected_segments": ["smb", "freelancer"],
+      "severity": "high",
+      "sources": ["interview-smb-1.txt", "interview-freelancer.txt"]
+    },
+    {
+      "rank": 5,
+      "finding": "Report template rigidity forces users into manual workarounds, undermining the core value proposition of automation.",
+      "evidence": "James Wilson exports to Excel to rebuild reports with custom sections. Alex Rivera manually adds branding after PDF export. Both describe this as defeating the purpose of an automated reporting tool.",
+      "affected_segments": ["smb", "freelancer"],
+      "severity": "medium",
+      "sources": ["interview-smb-2.txt", "interview-freelancer.txt"]
+    },
+    {
+      "rank": 6,
+      "finding": "Enterprise administration UX doesn't scale, forcing customers to build internal automation to compensate.",
+      "evidence": "Nexus Health Systems (47 departments) built internal scripts to automate user provisioning because adding a single department requires ~40 clicks across 6 screens. They're requesting bulk administration via configuration files or Terraform providers.",
+      "affected_segments": ["enterprise"],
+      "severity": "medium",
+      "sources": ["interview-enterprise-2.txt"]
+    },
+    {
+      "rank": 7,
+      "finding": "The automated reporting engine and collaboration features are the strongest retention drivers across all segments.",
+      "evidence": "All 5 interviewees cited reporting automation as the primary value driver. Maria Chen reduced reporting from 2 days to 20 minutes. Nexus Health cut clinical reporting from 12 days to 2 days. James Wilson called collaboration 'enterprise-grade software at an SMB price.'",
+      "affected_segments": ["smb", "enterprise", "freelancer"],
+      "severity": "positive",
+      "sources": ["interview-smb-1.txt", "interview-smb-2.txt", "interview-enterprise-1.txt", "interview-enterprise-2.txt", "interview-freelancer.txt"]
+    },
+    {
+      "rank": 8,
+      "finding": "White labeling is the single feature most likely to convert freelancers from free to paid plans.",
+      "evidence": "Alex Rivera stated white labeling 'alone would be worth $39/month' and that removing platform branding to use his own would make him 'look like a much bigger operation.' He currently exports to PDF and manually rebrands every report.",
+      "affected_segments": ["freelancer"],
+      "severity": "medium",
+      "sources": ["interview-freelancer.txt"]
+    },
+    {
+      "rank": 9,
+      "finding": "Enterprise customers need compliance-ready documentation and standardized healthcare packages to accelerate sales cycles.",
+      "evidence": "Meridian Financial's security review took 4 months due to incomplete SOC 2 documentation. Nexus Health requests HIPAA BAAs as 'a checkbox, not a contract.' Both indicate compliance friction is extending enterprise sales cycles unnecessarily.",
+      "affected_segments": ["enterprise"],
+      "severity": "medium",
+      "sources": ["interview-enterprise-1.txt", "interview-enterprise-2.txt"]
+    },
+    {
+      "rank": 10,
+      "finding": "The natural language query capability is a genuine competitive moat in the enterprise segment.",
+      "evidence": "Nexus Health CTO evaluated Tableau, Looker, and Power BI and stated the NLP query capability is 'genuinely ahead of all of them,' enabling clinicians to query data without analyst support. He called it 'the killer feature' and said it's 'hard to replicate.'",
+      "affected_segments": ["enterprise"],
+      "severity": "positive",
+      "sources": ["interview-enterprise-2.txt"]
+    },
+    {
+      "rank": 11,
+      "finding": "API rate limits are constraining enterprise automation workflows, forcing customers to build workarounds.",
+      "evidence": "Meridian Financial hits the 1,000 requests/hour cap during peak hours and built their own caching layer. Sarah Mitchell stated 'for an enterprise customer paying what we're paying, rate limits shouldn't be the bottleneck.'",
+      "affected_segments": ["enterprise"],
+      "severity": "medium",
+      "sources": ["interview-enterprise-1.txt"]
+    },
+    {
+      "rank": 12,
+      "finding": "The free tier successfully drives adoption among freelancers but the upgrade path is misaligned with actual usage patterns.",
+      "evidence": "Alex Rivera needs 10-12 reports/month but the free tier caps at 5 and the next tier ($79/month for 20) overshoots his needs. A $39/month tier with 15 reports would convert him immediately.",
+      "affected_segments": ["freelancer"],
+      "severity": "medium",
+      "sources": ["interview-freelancer.txt"]
+    },
+    {
+      "rank": 13,
+      "finding": "SMB customers are actively evaluating competitors, with template flexibility and pricing as the primary comparison points.",
+      "evidence": "James Wilson is evaluating ReportStack, which is cheaper with more flexible templates. He'll only commit to an annual plan if template customization improves before his renewal date.",
+      "affected_segments": ["smb"],
+      "severity": "high",
+      "sources": ["interview-smb-2.txt"]
+    },
+    {
+      "rank": 14,
+      "finding": "The knowledge base contains outdated content, undermining self-serve support for cost-conscious segments.",
+      "evidence": "Alex Rivera found a 2024 knowledge base article referencing features that no longer exist. For freelancers who avoid contacting support, outdated documentation directly impacts their ability to use the product effectively.",
+      "affected_segments": ["freelancer"],
+      "severity": "low",
+      "sources": ["interview-freelancer.txt"]
     }
   ],
   "segment_breakdown": {
     "smb": {
-      "top_concern": "Insufficient evidence in the uploaded documents.",
-      "summary": "Insufficient evidence in the uploaded documents.",
-      "key_quote": "Insufficient evidence in the uploaded documents."
+      "top_concern": "Onboarding complexity and time-to-value are driving lost conversions and active churn evaluation.",
+      "summary": "SMB customers (8-12 employees) derive strong value from automated reporting and collaboration features once fully onboarded, reducing report generation from days to minutes. However, the 2-3 week setup process, 7-day trial period, and $299/month entry price create a conversion funnel that filters out all but the most determined buyers. One of two SMB interviewees is actively evaluating a competitor (ReportStack) and will only commit to an annual plan if template flexibility improves. Customer support response times of 3+ days are unacceptable for small teams that lack internal fallback options.",
+      "key_quote": "The setup process was brutal. It took us almost 3 weeks to get everything configured properly, and I had to pull my best developer off client work for most of that time."
     },
     "enterprise": {
-      "top_concern": "Insufficient evidence in the uploaded documents.",
-      "summary": "Insufficient evidence in the uploaded documents.",
-      "key_quote": "Insufficient evidence in the uploaded documents."
+      "top_concern": "API instability and undocumented changes are creating production incidents and churn risk in the highest-value segment.",
+      "summary": "Enterprise customers (2,400-5,100 employees) validate the platform's core strengths: handling high data volumes without performance degradation, best-in-class NLP query capabilities, and role-based access control that supports multi-country compliance requirements. However, three systemic issues threaten retention: (1) undocumented API changes have caused production outages, with one customer reporting 3 incidents in a single quarter, (2) administration UX doesn't scale to organizations with 40+ departments, forcing customers to build internal automation, and (3) compliance documentation gaps extend sales cycles by months. Enterprise customers are willing to be reference accounts if API stability, viewer licensing, and SLA terms improve.",
+      "key_quote": "We've had 3 production incidents in the last quarter that were traced back to undocumented API changes on your side. That's not acceptable for healthcare infrastructure."
     },
     "freelancer": {
-      "top_concern": "Insufficient evidence in the uploaded documents.",
-      "summary": "Insufficient evidence in the uploaded documents.",
-      "key_quote": "Insufficient evidence in the uploaded documents."
+      "top_concern": "The pricing ladder has a missing rung between free and paid that blocks conversion, and lack of white labeling limits perceived value.",
+      "summary": "Freelance data consultants use the product to generate professional client-facing reports, saving approximately 5 hours per engagement. The free tier (5 reports/month) successfully drives adoption but the jump to $79/month for 20 reports overshoots the 10-12 reports most freelancers actually need. White labeling is the highest-impact missing feature — freelancers currently export to PDF and manually rebrand every report, and would pay specifically for the ability to replace platform branding with their own. The knowledge base has outdated content, and freelancers on the free tier assume support will be slow, so they don't file tickets at all.",
+      "key_quote": "If I could replace your logo with mine and use my brand colors, I'd look like a much bigger operation. That alone would be worth $39/month to me."
     }
   },
   "themes": [
     {
-      "name": "Search and Navigation",
-      "description": "The user reports two related search issues: slow performance (4-5 second query time for approximately 30 tasks) and limited scope (does not search across boards). The user organizes work by client and the lack of cross-board search forces manual per-board searching. These are the only issues the user describes as 'real problems.'",
+      "name": "Pricing & Packaging Gaps",
+      "description": "Every customer segment has a pricing mismatch: SMBs need a $149 starter tier, freelancers need a $39 mid-tier, and enterprises need viewer-only licenses. These gaps are directly causing lost conversions and expansion revenue.",
       "severity": "high",
-      "affected_segments": [
-        "general"
+      "affected_segments": ["smb", "enterprise", "freelancer"],
+      "insight_count": 3,
+      "key_quotes": [
+        {
+          "quote": "At $299/month we're constantly evaluating whether the time savings are worth it. A starter tier around $149 would make it a no-brainer.",
+          "segment": "smb",
+          "source": "Maria Chen, GreenLeaf Marketing"
+        },
+        {
+          "quote": "A $39/month tier with 15 reports would get me to convert immediately.",
+          "segment": "freelancer",
+          "source": "Alex Rivera, Independent Data Consultant"
+        },
+        {
+          "quote": "A viewer license tier would save us about $40,000 a year. I've mentioned this to our account manager three times.",
+          "segment": "enterprise",
+          "source": "Sarah Mitchell, Meridian Financial"
+        }
       ],
+      "interpretation": "Pricing gaps are the most cross-cutting issue in the data. The current pricing model was likely designed for a single ideal customer profile and hasn't been adapted for the three distinct segments that actually use the product. Each segment has a clear, specific ask that maps to a concrete revenue opportunity. The freelancer mid-tier alone could capture users who are currently churning at the free-to-paid boundary."
+    },
+    {
+      "name": "Onboarding Friction & Time-to-Value",
+      "description": "SMB customers face a 2-3 week setup process that requires technical resources they don't have. The 7-day trial is too short to demonstrate value for a product that takes weeks to configure. Enterprise customers face 4-month security reviews due to incomplete compliance documentation.",
+      "severity": "high",
+      "affected_segments": ["smb", "enterprise"],
+      "insight_count": 3,
+      "key_quotes": [
+        {
+          "quote": "The setup process was brutal. It took us almost 3 weeks to get everything configured properly.",
+          "segment": "smb",
+          "source": "Maria Chen, GreenLeaf Marketing"
+        },
+        {
+          "quote": "7 days isn't enough to evaluate something like this when you're also running a business. I almost didn't convert because I hadn't seen enough value yet.",
+          "segment": "smb",
+          "source": "James Wilson, TechBridge Solutions"
+        },
+        {
+          "quote": "The security review took 4 months because your SOC 2 documentation was incomplete on the first submission.",
+          "segment": "enterprise",
+          "source": "Sarah Mitchell, Meridian Financial"
+        }
+      ],
+      "interpretation": "Onboarding friction manifests differently by segment but the root cause is the same: the product assumes a level of available time and technical resources that doesn't match customer reality. For SMBs, the fix is guided setup and a longer trial. For enterprises, the fix is pre-packaged compliance documentation. Both are solvable without fundamental product changes."
+    },
+    {
+      "name": "Platform Stability & API Reliability",
+      "description": "Enterprise customers are experiencing production incidents caused by undocumented API changes. Rate limits constrain automation workflows. These issues represent the highest churn risk because they affect the segment that pays the most and is hardest to acquire.",
+      "severity": "critical",
+      "affected_segments": ["enterprise"],
+      "insight_count": 3,
+      "key_quotes": [
+        {
+          "quote": "In March, you changed the authentication flow for the reporting API without sufficient notice. Our integration broke at 2 AM.",
+          "segment": "enterprise",
+          "source": "Dr. Robert Kim, Nexus Health Systems"
+        },
+        {
+          "quote": "We need a 30-day deprecation window and a dedicated status page for API changes.",
+          "segment": "enterprise",
+          "source": "Dr. Robert Kim, Nexus Health Systems"
+        },
+        {
+          "quote": "During peak hours we're hitting the 1,000 requests/hour cap. We've had to build our own caching layer to work around it.",
+          "segment": "enterprise",
+          "source": "Sarah Mitchell, Meridian Financial"
+        }
+      ],
+      "interpretation": "API stability is a table-stakes requirement for enterprise customers, especially in regulated industries like healthcare and finance. The fact that two separate enterprise customers independently raised API issues suggests this is a systemic problem, not a one-off. The 30-day deprecation window and dedicated status page are standard industry practices that should be implemented immediately. The rate limit issue is a capacity planning problem that should be addressed in the enterprise pricing tier."
+    },
+    {
+      "name": "Customization & White Labeling",
+      "description": "Users across segments want more control over report appearance and structure. SMBs need flexible templates with drag-and-drop sections. Freelancers need white labeling to present reports under their own brand. Both are currently working around these limitations by exporting to Excel or PDF and manually reformatting.",
+      "severity": "medium",
+      "affected_segments": ["smb", "freelancer"],
       "insight_count": 2,
       "key_quotes": [
         {
-          "quote": "The search function is extremely slow - it takes 4-5 seconds to find anything, and I only have about 30 tasks.",
-          "segment": "general",
-          "source": "user-interview.txt"
+          "quote": "I can't rearrange sections or add custom metrics without exporting to Excel and rebuilding. That defeats the purpose.",
+          "segment": "smb",
+          "source": "James Wilson, TechBridge Solutions"
         },
         {
-          "quote": "It also doesn't search across different boards, which is a problem since I organize work by client.",
-          "segment": "general",
-          "source": "user-interview.txt"
+          "quote": "Every report has your branding in the footer, and I have to export to PDF and manually add my own branding. If I could replace your logo with mine and use my brand colors, I'd look like a much bigger operation.",
+          "segment": "freelancer",
+          "source": "Alex Rivera, Independent Data Consultant"
         }
       ],
-      "interpretation": "The user provides direct statements about two shortcomings of search: speed and cross-board scope. Both are described as problems affecting the user's workflow. No information is available about how widespread this issue is among other users."
+      "interpretation": "Customization requests fall into two categories: structural (rearranging report sections, adding custom metrics) and branding (white labeling, custom colors). Structural customization is a product investment. White labeling is a feature flag + business decision. The freelancer segment's willingness to pay specifically for white labeling makes this a straightforward revenue opportunity."
+    },
+    {
+      "name": "Core Value Delivery",
+      "description": "Despite the friction points, the product delivers exceptional value in its core use case. Automated reporting reduces hours of manual work to minutes. Collaboration features are enterprise-grade. The NLP query capability is best-in-class and serves as a competitive moat.",
+      "severity": "positive",
+      "affected_segments": ["smb", "enterprise", "freelancer"],
+      "insight_count": 3,
+      "key_quotes": [
+        {
+          "quote": "What used to take us 2 days of manual data pulling and formatting now happens in about 20 minutes. Our clients have noticed the improvement in report quality.",
+          "segment": "smb",
+          "source": "Maria Chen, GreenLeaf Marketing"
+        },
+        {
+          "quote": "Our clinical reporting cycle went from 12 days to 2 days. That's a 6x improvement that directly impacts patient care decisions.",
+          "segment": "enterprise",
+          "source": "Dr. Robert Kim, Nexus Health Systems"
+        },
+        {
+          "quote": "Your natural language query capability is genuinely ahead of all of them. Our clinicians can ask questions in plain English and get accurate answers without needing a data analyst.",
+          "segment": "enterprise",
+          "source": "Dr. Robert Kim, Nexus Health Systems"
+        }
+      ],
+      "interpretation": "The core product is strong and the value proposition is clear across all segments. The positive sentiment around reporting automation, collaboration, and NLP query provides a solid foundation. The issues identified in other themes are growth blockers, not existential threats — but they need to be addressed before competitors close the gap on the core differentiators."
     }
   ],
   "priority_matrix_data": [
-    {
-      "theme_name": "Search and Navigation",
-      "importance": 3,
-      "urgency": 3,
-      "insight_count": 2,
-      "severity": "high"
-    }
+    { "theme_name": "Platform Stability & API Reliability", "importance": 5, "urgency": 5, "insight_count": 3, "severity": "critical" },
+    { "theme_name": "Pricing & Packaging Gaps", "importance": 5, "urgency": 4, "insight_count": 3, "severity": "high" },
+    { "theme_name": "Onboarding Friction & Time-to-Value", "importance": 4, "urgency": 4, "insight_count": 3, "severity": "high" },
+    { "theme_name": "Customization & White Labeling", "importance": 3, "urgency": 3, "insight_count": 2, "severity": "medium" },
+    { "theme_name": "Core Value Delivery", "importance": 5, "urgency": 2, "insight_count": 3, "severity": "positive" }
   ],
   "recommendations": [
     {
       "rank": 1,
-      "action": "Improve search query performance and add cross-board search capability.",
-      "rationale": "The user explicitly reports that search takes 4-5 seconds for approximately 30 tasks and does not search across boards. The user describes this as 'extremely slow' and states it is 'a problem since I organize work by client.'",
-      "target_segment": "all",
-      "expected_impact": "Addressing these search issues would resolve the user's primary complaint about the product based on the available evidence.",
+      "action": "Implement a 30-day API deprecation window and publish a dedicated API changelog and status page.",
+      "rationale": "Two enterprise customers independently reported production incidents from undocumented API changes. One (Nexus Health, 5,100 employees) is reconsidering their contract if stability doesn't improve by Q4. This is the highest churn risk in the highest-value segment.",
+      "target_segment": "enterprise",
+      "expected_impact": "Eliminates the primary enterprise churn driver and unlocks reference customers. Both Meridian Financial and Nexus Health indicated willingness to be references if API stability improves.",
       "effort_estimate": "medium"
+    },
+    {
+      "rank": 2,
+      "action": "Introduce a $149/month SMB starter tier and a $39/month freelancer mid-tier with 15 reports.",
+      "rationale": "Every segment has a pricing gap causing lost conversions. SMBs are evaluating competitors at lower price points. Freelancers are stuck on the free tier because the jump to $79 is too steep. These tiers would capture users currently churning at conversion boundaries.",
+      "target_segment": "all",
+      "expected_impact": "Directly addresses the most cross-cutting issue in the data. The freelancer tier alone would convert users like Alex Rivera who are actively asking for it. The SMB starter tier removes the price objection that's driving competitive evaluation.",
+      "effort_estimate": "low"
+    },
+    {
+      "rank": 3,
+      "action": "Redesign the SMB onboarding flow with a guided setup wizard, pre-built integration templates for HubSpot and QuickBooks, and extend the trial to 14 days.",
+      "rationale": "SMB setup currently takes 2-3 weeks and requires dedicated developer time. The 7-day trial expires before most SMBs see value. Pre-built integration templates and a guided wizard would reduce setup time to under a week without requiring engineering resources.",
+      "target_segment": "smb",
+      "expected_impact": "Reduces the primary SMB conversion blocker. Maria Chen explicitly said she'd recommend the product if setup time dropped to under a week. A 14-day trial gives SMBs enough time to configure the product and see value before the decision point.",
+      "effort_estimate": "high"
+    },
+    {
+      "rank": 4,
+      "action": "Add white labeling as a paid feature on the freelancer and SMB tiers, allowing custom logo, brand colors, and footer replacement.",
+      "rationale": "Freelancers are manually rebranding reports after PDF export. Alex Rivera stated white labeling alone would be worth $39/month. This is a feature flag + business decision, not a complex product investment.",
+      "target_segment": "freelancer",
+      "expected_impact": "Converts free-tier freelancers to paid plans and increases perceived value for SMB agencies who present reports to their own clients. Low implementation effort relative to revenue impact.",
+      "effort_estimate": "low"
+    },
+    {
+      "rank": 5,
+      "action": "Add a viewer-only enterprise license tier at a reduced per-seat price for read-only dashboard access.",
+      "rationale": "Meridian Financial has 200 users who only need dashboard access but are paying full seat price. Sarah Mitchell has requested this three times without a clear response. This is leaving ~$40K/year on the table at a single account.",
+      "target_segment": "enterprise",
+      "expected_impact": "Increases enterprise net revenue retention by capturing budget that's currently being contested. Also removes a recurring friction point in enterprise account management conversations.",
+      "effort_estimate": "low"
+    },
+    {
+      "rank": 6,
+      "action": "Improve SMB customer support with a guaranteed 4-hour acknowledgment SLA and a priority support add-on for paid tiers.",
+      "rationale": "Maria Chen waited 3 days for a response when report generation broke. For small teams without internal fallbacks, multi-day support gaps mean business downtime. A 4-hour acknowledgment SLA would address the core anxiety without requiring a full support team expansion.",
+      "target_segment": "smb",
+      "expected_impact": "Reduces churn risk among SMB customers who currently feel deprioritized relative to enterprise accounts. The priority support add-on creates a new revenue stream while setting clear expectations for free-tier response times.",
+      "effort_estimate": "medium"
+    },
+    {
+      "rank": 7,
+      "action": "Build bulk administration capabilities for enterprise customers, including user provisioning via API/configuration files and SSO with Azure AD.",
+      "rationale": "Nexus Health (47 departments) built internal scripts to work around the 40-click-per-department admin UI. They're requesting Terraform provider support and Azure AD SSO. This is table-stakes for enterprise scalability.",
+      "target_segment": "enterprise",
+      "expected_impact": "Removes a significant friction point for large enterprise deployments and reduces the support burden created by customers building their own workarounds. SSO with Azure AD is a common enterprise requirement that currently blocks deals.",
+      "effort_estimate": "high"
     }
   ],
   "notable_quotes": [
     {
-      "quote": "The search function is extremely slow - it takes 4-5 seconds to find anything, and I only have about 30 tasks.",
-      "speaker": "User interview",
-      "segment": "general",
-      "context": "User describing the main pain point with FlowBoard after three weeks of use."
+      "quote": "The setup process was brutal. It took us almost 3 weeks to get everything configured properly, and I had to pull my best developer off client work for most of that time.",
+      "speaker": "Maria Chen",
+      "segment": "smb",
+      "context": "Owner of GreenLeaf Marketing (12 employees), describing the onboarding experience after 3 months of use."
     },
     {
-      "quote": "It also doesn't search across different boards, which is a problem since I organize work by client.",
-      "speaker": "User interview",
-      "segment": "general",
-      "context": "User explaining the scope limitation of the search function."
+      "quote": "7 days isn't enough to evaluate something like this when you're also running a business. I almost didn't convert because I hadn't seen enough value yet.",
+      "speaker": "James Wilson",
+      "segment": "smb",
+      "context": "Founder of TechBridge Solutions (8 employees), explaining why he nearly abandoned the product during the trial period."
     },
     {
-      "quote": "The interface is clean and modern - definitely the best looking project management tool I've tried.",
-      "speaker": "User interview",
-      "segment": "general",
-      "context": "User providing positive feedback on the product design."
+      "quote": "We've had 3 production incidents in the last quarter that were traced back to undocumented API changes on your side. That's not acceptable for healthcare infrastructure.",
+      "speaker": "Dr. Robert Kim",
+      "segment": "enterprise",
+      "context": "CTO of Nexus Health Systems (5,100 employees), discussing API stability concerns after 1 year as a customer."
+    },
+    {
+      "quote": "Your natural language query capability is genuinely ahead of all of them. Our clinicians can ask questions in plain English and get accurate answers without needing a data analyst.",
+      "speaker": "Dr. Robert Kim",
+      "segment": "enterprise",
+      "context": "CTO of Nexus Health Systems, comparing the product favorably against Tableau, Looker, and Power BI."
+    },
+    {
+      "quote": "A viewer license tier would save us about $40,000 a year. I've mentioned this to our account manager three times and haven't gotten a clear answer.",
+      "speaker": "Sarah Mitchell",
+      "segment": "enterprise",
+      "context": "VP of Operations at Meridian Financial (2,400 employees), on the lack of response to enterprise feature requests."
+    },
+    {
+      "quote": "What used to take us 2 days of manual data pulling and formatting now happens in about 20 minutes. Our clients have noticed the improvement in report quality too.",
+      "speaker": "Maria Chen",
+      "segment": "smb",
+      "context": "Owner of GreenLeaf Marketing, describing the core value proposition that keeps her using the product despite onboarding pain."
+    },
+    {
+      "quote": "If I could replace your logo with mine and use my brand colors, I'd look like a much bigger operation. That alone would be worth $39/month to me.",
+      "speaker": "Alex Rivera",
+      "segment": "freelancer",
+      "context": "Independent data consultant, explaining why white labeling is the feature most likely to convert him to a paid plan."
+    },
+    {
+      "quote": "The jump from free to paid is too steep. I only need about 10-12 reports a month, so I'm paying for capacity I don't use.",
+      "speaker": "Alex Rivera",
+      "segment": "freelancer",
+      "context": "Independent data consultant, describing the pricing gap that keeps him on the free tier."
+    },
+    {
+      "quote": "I can't rearrange sections or add custom metrics without exporting to Excel and rebuilding. That defeats the purpose.",
+      "speaker": "James Wilson",
+      "segment": "smb",
+      "context": "Founder of TechBridge Solutions, on the limitations of report template customization."
+    },
+    {
+      "quote": "The collaboration features actually work better than Google Docs for our use case. The version history has saved us multiple times.",
+      "speaker": "James Wilson",
+      "segment": "smb",
+      "context": "Founder of TechBridge Solutions, praising the collaboration capabilities as enterprise-grade at an SMB price."
     }
   ]
 }

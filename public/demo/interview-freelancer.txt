@@ -1,0 +1,32 @@
+INTERVIEW TRANSCRIPT: Freelancer Customer Research
+Date: July 18, 2026
+Participant: Alex Rivera, Independent Data Consultant
+Interviewer: Research Team
+
+Q: How did you start using our product?
+
+Alex: I saw an ad on LinkedIn and the free tier caught my attention. As a solo consultant, I can't justify expensive tools unless they directly generate revenue. The free tier let me test the waters without commitment, which is exactly what freelancers need.
+
+Q: What's your primary use case?
+
+Alex: I use it to generate client-facing reports from their raw data. My clients are mostly mid-sized companies that don't have internal data teams, so I come in, clean up their data, and produce insights. Your platform handles the visualization and formatting, which saves me about 5 hours per client engagement. At my hourly rate, that's real money.
+
+Q: What's holding you back from upgrading to a paid plan?
+
+Alex: The jump from free to paid is too steep. The free tier gives me 5 reports a month, which covers about half my clients. The next tier is $79/month for 20 reports. I only need about 10-12 reports a month, so I'm paying for capacity I don't use. A $39/month tier with 15 reports would get me to convert immediately.
+
+Q: What features matter most to you?
+
+Alex: The report templates are the main value for me. They look professional enough that my clients think I have a whole design team. The data connector library is also solid - I can pull from PostgreSQL, MySQL, and Google Sheets, which covers 90% of my clients. The SQL editor could be better though. It's missing autocomplete and syntax highlighting, which slows me down.
+
+Q: What do you wish the product could do?
+
+Alex: White labeling. Right now every report has your branding in the footer, and I have to export to PDF and manually add my own branding. If I could replace your logo with mine and use my brand colors, I'd look like a much bigger operation. That alone would be worth $39/month to me.
+
+Q: How do you handle support?
+
+Alex: I don't. I've never contacted support because I assume it'll be slow for free-tier users. I just Google my issues or figure things out myself. The knowledge base is decent but some articles are outdated - I found one from 2024 that referenced features that don't exist anymore.
+
+Q: Would you recommend us to other freelancers?
+
+Alex: Yes, with caveats. I'd tell them it's great for client reporting but warn them about the pricing gap and the lack of white labeling. For a freelancer, looking professional to clients is everything. If you solved the white labeling and added a mid-tier plan, I'd be your biggest evangelist.

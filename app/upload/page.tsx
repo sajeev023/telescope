@@ -1,25 +1,23 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Upload, FileText, X, ArrowRight, Sparkles, Loader2 } from 'lucide-react'
-import { FILES_STORAGE_KEY, TRANSCRIPTS_STORAGE_KEY } from '@/lib/data'
+import {
+  FileText,
+  X,
+  ArrowRight,
+  Sparkles,
+  Loader2,
+  Plus,
+  Trash2,
+  ArrowUpRight,
+} from 'lucide-react'
+import { saveFiles, getStoredFiles, clearFiles } from '@/lib/storage'
+import { loadDemoFiles, readRealFiles, type LoadedFile } from '@/lib/demo'
+import { TelescopeMark } from '@/components/site/Logo'
 
-const DEMO_FILES = [
-  { name: 'interview-smb-1.txt', path: '/demo/interview-smb-1.txt' },
-  { name: 'interview-smb-2.txt', path: '/demo/interview-smb-2.txt' },
-  { name: 'interview-enterprise-1.txt', path: '/demo/interview-enterprise-1.txt' },
-  { name: 'interview-enterprise-2.txt', path: '/demo/interview-enterprise-2.txt' },
-  { name: 'interview-freelancer.txt', path: '/demo/interview-freelancer.txt' },
-]
-
-type SelectedFile = {
-  id: string
-  name: string
-  size: string
-  content?: string
-}
+type SelectedFile = LoadedFile
 
 export default function UploadPage() {
   const router = useRouter()
@@ -30,54 +28,21 @@ export default function UploadPage() {
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved =
-        sessionStorage.getItem(FILES_STORAGE_KEY) ||
-        sessionStorage.getItem(TRANSCRIPTS_STORAGE_KEY)
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved)
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setFiles(parsed)
-          }
-        } catch {
-          // ignore parse error
-        }
-      }
-    }
+    const stored = getStoredFiles()
+    if (stored.length > 0) setFiles(stored)
   }, [])
 
-  const saveToSession = (filesToSave: SelectedFile[]) => {
-    if (typeof window !== 'undefined') {
-      const json = JSON.stringify(filesToSave)
-      sessionStorage.setItem(FILES_STORAGE_KEY, json)
-      sessionStorage.setItem(TRANSCRIPTS_STORAGE_KEY, json)
-    }
+  const handleLoaded = (next: SelectedFile[]) => {
+    setFiles(next)
+    saveFiles(next)
   }
 
-  const loadDemoFiles = useCallback(async () => {
+  const loadDemoFilesHandler = async () => {
     setIsLoadingDemo(true)
     setLoadError(null)
-
     try {
-      const results: SelectedFile[] = []
-      for (let i = 0; i < DEMO_FILES.length; i++) {
-        const df = DEMO_FILES[i]
-        const response = await fetch(df.path)
-        if (!response.ok) {
-          throw new Error(`Failed to load ${df.name} (status ${response.status})`)
-        }
-        const content = await response.text()
-        const sizeKB = (new Blob([content]).size / 1024).toFixed(1)
-        results.push({
-          id: `${df.name}-${i}-${Date.now()}`,
-          name: df.name,
-          size: `${sizeKB} KB`,
-          content,
-        })
-      }
-      setFiles(results)
-      saveToSession(results)
+      const results = await loadDemoFiles()
+      handleLoaded(results)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load demo transcripts'
       setLoadError(message)
@@ -85,35 +50,14 @@ export default function UploadPage() {
     } finally {
       setIsLoadingDemo(false)
     }
-  }, [])
+  }
 
-  const readRealFiles = async (fileList: FileList | File[]) => {
-    const newFiles: SelectedFile[] = []
-    for (let i = 0; i < fileList.length; i++) {
-      const file = fileList[i]
-      let textContent = ''
-      try {
-        textContent = await file.text()
-      } catch (err) {
-        console.error('Failed to read file:', file.name, err)
-      }
-      const formattedSize =
-        file.size < 1024
-          ? `${file.size} B`
-          : `${(file.size / 1024).toFixed(1)} KB`
-
-      newFiles.push({
-        id: `${file.name}-${i}-${Date.now()}`,
-        name: file.name,
-        size: formattedSize,
-        content: textContent,
-      })
-    }
-
+  const readRealFilesHandler = async (fileList: FileList | File[]) => {
+    const newFiles = await readRealFiles(fileList)
     if (newFiles.length > 0) {
       setFiles((prev) => {
         const updated = [...prev, ...newFiles]
-        saveToSession(updated)
+        saveFiles(updated)
         return updated
       })
     }
@@ -122,7 +66,7 @@ export default function UploadPage() {
   const removeFile = (id: string) => {
     setFiles((prev) => {
       const updated = prev.filter((f) => f.id !== id)
-      saveToSession(updated)
+      saveFiles(updated)
       return updated
     })
   }
@@ -130,14 +74,11 @@ export default function UploadPage() {
   const clearAll = () => {
     setFiles([])
     setLoadError(null)
-    if (typeof window !== 'undefined') {
-      sessionStorage.removeItem(FILES_STORAGE_KEY)
-      sessionStorage.removeItem(TRANSCRIPTS_STORAGE_KEY)
-    }
+    clearFiles()
   }
 
   const handleStart = () => {
-    saveToSession(files)
+    saveFiles(files)
     router.push('/thinking')
   }
 
@@ -145,9 +86,9 @@ export default function UploadPage() {
     e.preventDefault()
     setIsDragging(false)
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      await readRealFiles(e.dataTransfer.files)
+      await readRealFilesHandler(e.dataTransfer.files)
     } else {
-      await loadDemoFiles()
+      await loadDemoFilesHandler()
     }
   }
 
@@ -167,29 +108,46 @@ export default function UploadPage() {
 
   const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      await readRealFiles(e.target.files)
+      await readRealFilesHandler(e.target.files)
     }
   }
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] bg-background px-6 py-12">
-      <div className="max-w-4xl mx-auto">
+    <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden">
+      <div className="absolute inset-0 -z-10">
+        <div
+          className="aurora-glow animate-aurora-slow"
+          style={{
+            left: '15%',
+            top: '0%',
+            width: '50%',
+            height: '60%',
+            background: 'radial-gradient(circle, rgba(232,177,78,0.1), transparent 70%)',
+          }}
+        />
+        <div className="absolute inset-0 bg-dotgrid opacity-30 mask-fade-b" />
+      </div>
+
+      <div className="max-w-4xl mx-auto px-6 py-16 lg:py-20">
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-10 text-center"
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="text-center mb-12"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 mb-4 rounded-full bg-accent/10 border border-accent/20 text-accent text-sm">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>AI Research Synthesis</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-surface/60 backdrop-blur-sm text-xs uppercase tracking-editorial-wide text-text-secondary">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+            Step 01 · Ingest
           </div>
-          <h1 className="text-4xl font-bold text-text-primary mb-3">
-            Upload your research
+          <h1 className="editorial-display text-display-lg mt-6 text-text-primary text-balance">
+            Bring your{' '}
+            <span className="serif-italic text-accent">sources</span>{' '}
+            into the lens.
           </h1>
-          <p className="text-text-secondary max-w-xl mx-auto">
-            Drop your source documents below. We&apos;ll read, cluster, and
-            synthesize them into a boardroom-ready report.
+          <p className="text-text-secondary mt-5 max-w-xl mx-auto text-pretty">
+            Drop interview transcripts, support calls, meeting notes — anything
+            text. Telescope will read every source end-to-end and synthesize a
+            boardroom-ready report.
           </p>
         </motion.div>
 
@@ -210,7 +168,7 @@ export default function UploadPage() {
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
             >
               <motion.button
                 type="button"
@@ -218,36 +176,60 @@ export default function UploadPage() {
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-                className={`w-full rounded-2xl border-2 border-dashed transition-colors px-8 py-20 flex flex-col items-center justify-center gap-4 bg-surface ${
+                whileHover={{ scale: 1.005 }}
+                whileTap={{ scale: 0.995 }}
+                className={`group relative w-full rounded-3xl border-2 border-dashed transition-all duration-300 px-8 py-20 flex flex-col items-center justify-center gap-5 bg-surface/40 backdrop-blur-sm ${
                   isDragging
-                    ? 'border-accent bg-accent/5'
-                    : 'border-border hover:border-accent/50'
+                    ? 'border-accent bg-accent/5 shadow-glow-accent'
+                    : 'border-border hover:border-accent/40'
                 }`}
               >
-                <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center">
-                  <Upload className="w-8 h-8 text-accent" />
+                <div className="relative">
+                  <div
+                    className={`absolute inset-0 rounded-full transition-opacity duration-500 ${
+                      isDragging ? 'bg-accent/20 blur-2xl opacity-100' : 'opacity-0'
+                    }`}
+                  />
+                  <div className="relative w-20 h-20 rounded-3xl bg-surface-raised border border-border flex items-center justify-center text-accent group-hover:scale-105 transition-transform duration-500 ease-editorial">
+                    <TelescopeMark className="w-10 h-10" />
+                  </div>
                 </div>
+
                 <div className="text-center">
-                  <p className="text-lg font-medium text-text-primary mb-1">
-                    Drop files here, or click to load sources
+                  <p className="text-lg font-medium text-text-primary mb-1.5">
+                    Drop files here, or click to browse
                   </p>
                   <p className="text-sm text-text-secondary">
-                    TXT files or transcripts will be loaded for analysis
+                    TXT, MD, CSV, JSON · up to 50 files · processed in your browser
                   </p>
                 </div>
+
+                <div className="flex items-center gap-3 text-xs font-mono text-text-muted">
+                  <span className="px-2 py-0.5 rounded border border-border">.txt</span>
+                  <span className="px-2 py-0.5 rounded border border-border">.md</span>
+                  <span className="px-2 py-0.5 rounded border border-border">.csv</span>
+                  <span className="px-2 py-0.5 rounded border border-border">.json</span>
+                </div>
               </motion.button>
-              <div className="text-center mt-3">
+
+              <div className="flex items-center justify-center gap-4 mt-6">
+                <div className="h-px flex-1 max-w-[80px] bg-border" />
                 <button
                   type="button"
-                  onClick={loadDemoFiles}
+                  onClick={loadDemoFilesHandler}
                   disabled={isLoadingDemo}
-                  className="text-xs text-text-secondary hover:text-accent underline transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
+                  className="text-xs text-text-secondary hover:text-accent transition-colors disabled:opacity-50 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-surface/60"
                 >
-                  {isLoadingDemo && <Loader2 className="w-3 h-3 animate-spin" />}
-                  {isLoadingDemo ? 'Loading demo transcripts...' : 'Or click here to load 5 sample demo files'}
+                  {isLoadingDemo ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-3.5 h-3.5 text-accent" />
+                  )}
+                  {isLoadingDemo
+                    ? 'Loading demo transcripts…'
+                    : 'Or load 5 sample transcripts'}
                 </button>
+                <div className="h-px flex-1 max-w-[80px] bg-border" />
               </div>
             </motion.div>
           ) : (
@@ -256,23 +238,30 @@ export default function UploadPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-6"
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="space-y-5"
             >
-              <div className="rounded-2xl border border-border bg-surface overflow-hidden">
+              <div className="card overflow-hidden">
                 <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-text-secondary" />
+                  <div className="flex items-center gap-3">
+                    <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse-subtle" />
                     <span className="text-sm font-medium text-text-primary">
-                      {files.length} {files.length === 1 ? 'file' : 'files'}{' '}
-                      ready
+                      {files.length} {files.length === 1 ? 'file' : 'files'} ready
+                    </span>
+                    <span className="text-xs font-mono text-text-muted">
+                      {files.reduce(
+                        (acc, f) => acc + parseFloat(f.size || '0'),
+                        0,
+                      ).toFixed(1)}{' '}
+                      KB total
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={clearAll}
-                    className="text-xs text-text-secondary hover:text-text-primary transition-colors"
+                    className="text-xs text-text-secondary hover:text-error transition-colors inline-flex items-center gap-1.5"
                   >
+                    <Trash2 className="w-3 h-3" />
                     Clear all
                   </button>
                 </div>
@@ -283,28 +272,29 @@ export default function UploadPage() {
                       key={file.id}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: i * 0.08 }}
+                      transition={{ duration: 0.4, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] }}
                       className="group px-6 py-4 flex items-center gap-4 hover:bg-surface-raised transition-colors"
                     >
-                      <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
-                        <FileText className="w-5 h-5 text-accent" />
+                      <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-4 h-4 text-accent" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-text-primary truncate">
+                        <p className="text-sm font-medium text-text-primary truncate font-mono">
                           {file.name}
                         </p>
-                        <p className="text-xs text-text-secondary mt-0.5">
-                          {file.size}
+                        <p className="text-xs text-text-muted mt-0.5 font-mono">
+                          {file.size} · ready
                         </p>
                       </div>
-                      <span className="text-xs px-2 py-1 rounded-md bg-success/10 text-success border border-success/20">
-                        Ready
+                      <span className="hidden sm:inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-success/10 text-success border border-success/20 font-mono">
+                        <span className="w-1 h-1 rounded-full bg-success" />
+                        READY
                       </span>
                       <button
                         type="button"
                         onClick={() => removeFile(file.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-error/10 text-text-secondary hover:text-error"
-                        aria-label="Remove file"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-error/10 text-text-muted hover:text-error"
+                        aria-label={`Remove ${file.name}`}
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -313,28 +303,37 @@ export default function UploadPage() {
                 </ul>
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   type="button"
                   onClick={handleZoneClick}
-                  className="px-4 py-3 rounded-2xl border border-border bg-surface hover:bg-surface-raised text-sm text-text-secondary hover:text-text-primary transition-colors"
+                  className="btn-ghost flex-1 sm:flex-initial"
                 >
-                  + Add more files
+                  <Plus className="w-4 h-4" />
+                  Add more files
                 </button>
                 <motion.button
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: files.length * 0.08 }}
+                  transition={{ duration: 0.5, delay: files.length * 0.06 + 0.1, ease: [0.22, 1, 0.36, 1] }}
                   type="button"
                   onClick={handleStart}
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
-                  className="flex-1 flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-accent hover:bg-accent-hover text-white font-medium transition-colors"
+                  className="btn-primary flex-1 !text-[15px] !py-4"
                 >
-                  <Sparkles className="w-5 h-5" />
-                  Start Analysis
-                  <ArrowRight className="w-5 h-5" />
+                  <Sparkles className="w-4 h-4" />
+                  Begin synthesis
+                  <ArrowRight className="w-4 h-4" />
                 </motion.button>
+              </div>
+
+              <div className="flex items-center justify-center gap-2 text-xs text-text-muted mt-2">
+                <ArrowUpRight className="w-3 h-3" />
+                <span>
+                  Next: Telescope reads every source and streams insights in real
+                  time.
+                </span>
               </div>
             </motion.div>
           )}

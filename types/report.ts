@@ -1,6 +1,9 @@
-export type Segment = 'smb' | 'enterprise' | 'freelancer'
+export type Segment = 'smb' | 'enterprise' | 'freelancer' | 'general'
 
-export type Severity = 'critical' | 'high' | 'medium' | 'low'
+// `positive` is a severity value used for strengths / retention drivers /
+// moats — findings that are not problems but still need to surface in the
+// report. It is a first-class severity, not an absence of severity.
+export type Severity = 'critical' | 'high' | 'medium' | 'low' | 'positive'
 
 export type Effort = 'low' | 'medium' | 'high'
 
@@ -11,6 +14,8 @@ export interface ReportMetadata {
   insights_extracted: number
   themes_identified: number
   segments_detected: Segment[]
+  /** Total character count across all source documents. Optional. */
+  corpus_chars?: number
 }
 
 export interface KeyFinding {
@@ -19,6 +24,7 @@ export interface KeyFinding {
   evidence: string
   affected_segments: Segment[]
   severity: Severity
+  sources?: string[]
 }
 
 export interface SegmentProfile {
@@ -31,6 +37,7 @@ export interface SegmentBreakdown {
   smb: SegmentProfile
   enterprise: SegmentProfile
   freelancer: SegmentProfile
+  general?: SegmentProfile
 }
 
 export interface Theme {

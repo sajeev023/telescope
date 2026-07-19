@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MessageCircle, Sparkles, Send } from 'lucide-react'
+import { MessageCircle, Sparkles, Send, Zap, Square, User } from 'lucide-react'
 import type { Report, Segment } from '@/types/report'
 import { SectionHeading, SegmentBadge } from './SegmentBadge'
+import { TelescopeMark } from '@/components/site/Logo'
 
 type Message = {
   id: number
@@ -12,8 +13,6 @@ type Message = {
   text: string
   segment?: Segment
 }
-
-const TYPING_DELAY = 1500
 
 function TypingDots() {
   return (
@@ -34,145 +33,42 @@ function TypingDots() {
   )
 }
 
-function generateAnswer(q: string, report: Report): { answer: string; segment?: Segment } {
-  const lower = q.toLowerCase()
-
-  // Enterprise-specific questions
-  if (lower.includes('enterprise')) {
-    const enterpriseProfile = report.segment_breakdown?.enterprise
-    const enterpriseThemes = report.themes?.filter((t) =>
-      t.affected_segments.includes('enterprise')
-    )
-    const enterpriseFindings = report.key_findings?.filter((f) =>
-      f.affected_segments.includes('enterprise')
-    )
-
-    const parts: string[] = []
-    if (enterpriseProfile?.top_concern) {
-      parts.push(`The top concern for enterprise users is: ${enterpriseProfile.top_concern}`)
-    }
-    if (enterpriseProfile?.summary) {
-      parts.push(enterpriseProfile.summary)
-    }
-    if (enterpriseFindings && enterpriseFindings.length > 0) {
-      parts.push(`Key finding: ${enterpriseFindings[0].finding}`)
-    }
-    if (enterpriseThemes && enterpriseThemes.length > 0) {
-      const criticalThemes = enterpriseThemes.filter((t) => t.severity === 'critical')
-      if (criticalThemes.length > 0) {
-        parts.push(`Critical themes: ${criticalThemes.map((t) => t.name).join(', ')}.`)
-      }
-    }
-    return { answer: parts.join(' ') || 'No enterprise-specific data in this report.', segment: 'enterprise' }
-  }
-
-  // SMB-specific questions
-  if (lower.includes('smb')) {
-    const smbProfile = report.segment_breakdown?.smb
-    const smbThemes = report.themes?.filter((t) =>
-      t.affected_segments.includes('smb')
-    )
-    const smbFindings = report.key_findings?.filter((f) =>
-      f.affected_segments.includes('smb')
-    )
-
-    const parts: string[] = []
-    if (smbProfile?.top_concern) {
-      parts.push(`The top concern for SMB users is: ${smbProfile.top_concern}`)
-    }
-    if (smbProfile?.summary) {
-      parts.push(smbProfile.summary)
-    }
-    if (smbFindings && smbFindings.length > 0) {
-      parts.push(`Key finding: ${smbFindings[0].finding}`)
-    }
-    if (smbThemes && smbThemes.length > 0) {
-      const criticalThemes = smbThemes.filter((t) => t.severity === 'critical' || t.severity === 'high')
-      if (criticalThemes.length > 0) {
-        parts.push(`Critical themes: ${criticalThemes.map((t) => t.name).join(', ')}.`)
-      }
-    }
-    return { answer: parts.join(' ') || 'No SMB-specific data in this report.', segment: 'smb' }
-  }
-
-  // Freelancer-specific questions
-  if (lower.includes('freelancer')) {
-    const freelancerProfile = report.segment_breakdown?.freelancer
-    const freelancerThemes = report.themes?.filter((t) =>
-      t.affected_segments.includes('freelancer')
-    )
-
-    const parts: string[] = []
-    if (freelancerProfile?.top_concern) {
-      parts.push(`The top concern for freelancers is: ${freelancerProfile.top_concern}`)
-    }
-    if (freelancerProfile?.summary) {
-      parts.push(freelancerProfile.summary)
-    }
-    if (freelancerThemes && freelancerThemes.length > 0) {
-      parts.push(`Relevant themes: ${freelancerThemes.map((t) => t.name).join(', ')}.`)
-    }
-    return { answer: parts.join(' ') || 'No freelancer-specific data in this report.', segment: 'freelancer' }
-  }
-
-  // "What should we build first" or prioritization questions
-  if (
-    lower.includes('build first') ||
-    lower.includes('priorit') ||
-    lower.includes('what should') ||
-    lower.includes('recommend')
-  ) {
-    const topRecs = report.recommendations?.slice(0, 3)
-    if (topRecs && topRecs.length > 0) {
-      const recTexts = topRecs.map(
-        (r) => `${r.rank}. ${r.action} (${r.effort_estimate} effort, targets ${r.target_segment})`
-      )
-      return {
-        answer: `Based on the research, the top priorities are:\n\n${recTexts.join('\n\n')}\n\n${report.executive_summary?.slice(0, 200) || ''}`,
-        segment: topRecs[0].target_segment === 'all' ? undefined : (topRecs[0].target_segment as Segment),
-      }
-    }
-  }
-
-  // Default: summarize the report
-  const summary = report.executive_summary
-  const topFinding = report.key_findings?.[0]
-  const parts: string[] = []
-  if (summary) {
-    parts.push(summary.slice(0, 400))
-  }
-  if (topFinding) {
-    parts.push(`The #1 finding is: ${topFinding.finding}`)
-  }
-  return {
-    answer:
-      parts.join('\n\n') ||
-      'The report has been generated. Try asking about a specific segment (enterprise, SMB, freelancer) or about what to build first.',
-  }
-}
-
 export function Interrogation({ report }: { report: Report }) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const idRef = useRef(0)
+  const abortRef = useRef<AbortController | null>(null)
 
   const presetQuestions = useMemo(() => {
     const segments = report.segment_breakdown
     const questions: Array<{ q: string; segment: Segment }> = []
 
     if (segments?.enterprise) {
-      questions.push({ q: 'What about enterprise users specifically?', segment: 'enterprise' as Segment })
+      questions.push({
+        q: 'What about enterprise users specifically?',
+        segment: 'enterprise' as Segment,
+      })
     }
     if (segments?.smb) {
-      questions.push({ q: "What's the biggest problem for SMBs?", segment: 'smb' as Segment })
+      questions.push({
+        q: "What's the biggest problem for SMBs?",
+        segment: 'smb' as Segment,
+      })
     }
     if (segments?.freelancer) {
-      questions.push({ q: 'How do freelancers feel about the product?', segment: 'freelancer' as Segment })
+      questions.push({
+        q: 'How do freelancers feel about the product?',
+        segment: 'freelancer' as Segment,
+      })
     }
     if (report.recommendations?.length > 0) {
-      questions.push({ q: 'What should we build first?', segment: 'smb' as Segment })
+      const firstSeg = (report.report_metadata.segments_detected?.[0] || 'general') as Segment
+      questions.push({
+        q: 'What should we build first?',
+        segment: firstSeg,
+      })
     }
 
     return questions
@@ -184,33 +80,116 @@ export function Interrogation({ report }: { report: Report }) {
     }
   }, [messages, isTyping])
 
-  const respondTo = (q: string) => {
-    const userMsg: Message = {
-      id: ++idRef.current,
-      role: 'user',
-      text: q,
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort()
     }
-    setMessages((m) => [...m, userMsg])
-    setInput('')
-    setIsTyping(true)
+  }, [])
 
-    const { answer, segment } = generateAnswer(q, report)
+  const streamResponse = useCallback(
+    async (question: string) => {
+      const aiMsgId = ++idRef.current
+      setMessages((m) => [...m, { id: aiMsgId, role: 'ai', text: '' }])
+      setIsTyping(true)
 
-    setTimeout(() => {
-      const aiMsg: Message = {
-        id: ++idRef.current,
-        role: 'ai',
-        text: answer,
-        segment,
+      const controller = new AbortController()
+      abortRef.current = controller
+
+      try {
+        const response = await fetch('/api/interrogate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
+          },
+          body: JSON.stringify({ report, question }),
+          signal: controller.signal,
+        })
+
+        if (!response.ok || !response.body) {
+          throw new Error(`API returned ${response.status}`)
+        }
+
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+        let accumulated = ''
+
+        while (!controller.signal.aborted) {
+          const { value, done } = await reader.read()
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() || ''
+
+          for (const line of lines) {
+            const trimmed = line.trim()
+            if (!trimmed || trimmed.startsWith(':')) continue
+
+            if (trimmed.startsWith('data:')) {
+              const dataStr = trimmed.slice(5).trim()
+              try {
+                const parsed = JSON.parse(dataStr)
+                if (parsed.error) {
+                  accumulated = `Error: ${parsed.error}`
+                } else if (parsed.text) {
+                  accumulated += parsed.text
+                }
+                setMessages((m) =>
+                  m.map((msg) =>
+                    msg.id === aiMsgId ? { ...msg, text: accumulated } : msg
+                  )
+                )
+                if (parsed.done) break
+              } catch {
+                /* ignore non-JSON */
+              }
+            }
+          }
+        }
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') return
+        setMessages((m) =>
+          m.map((msg) =>
+            msg.id === aiMsgId
+              ? {
+                  ...msg,
+                  text: 'Sorry, I was unable to process that question. Please try again.',
+                }
+              : msg
+          )
+        )
+      } finally {
+        setIsTyping(false)
+        abortRef.current = null
       }
-      setMessages((m) => [...m, aiMsg])
-      setIsTyping(false)
-    }, TYPING_DELAY)
-  }
+    },
+    [report]
+  )
+
+  const respondTo = useCallback(
+    (q: string) => {
+      const userMsg: Message = {
+        id: ++idRef.current,
+        role: 'user',
+        text: q,
+      }
+      setMessages((m) => [...m, userMsg])
+      setInput('')
+      streamResponse(q)
+    },
+    [streamResponse]
+  )
 
   const handlePreset = (q: string) => {
     respondTo(q)
   }
+
+  const handleStop = useCallback(() => {
+    abortRef.current?.abort()
+    setIsTyping(false)
+  }, [])
 
   const handleSend = () => {
     const q = input.trim()
@@ -220,31 +199,47 @@ export function Interrogation({ report }: { report: Report }) {
 
   return (
     <section className="mb-16">
-      <SectionHeading icon={<MessageCircle className="w-4 h-4" />} label="Interrogate the Report" />
-      <div className="rounded-2xl bg-surface border border-border p-6 hover:border-accent/20 transition-colors">
-        <div className="flex flex-wrap gap-2 mb-4">
-          {presetQuestions.map((p, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => handlePreset(p.q)}
-              disabled={isTyping}
-              className="text-xs px-3 py-1.5 rounded-full border border-border bg-surface-raised text-text-secondary hover:text-text-primary hover:border-accent/40 transition-colors disabled:opacity-50"
-            >
-              {p.q}
-            </button>
-          ))}
+      <SectionHeading
+        icon={<MessageCircle className="w-4 h-4" />}
+        label="Interrogate the Report"
+        index="08"
+      />
+      <div className="card-raised p-6 lg:p-7 relative overflow-hidden">
+        <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-accent/5 blur-3xl pointer-events-none" />
+
+        <div className="relative flex items-center justify-between mb-5">
+          <div className="flex flex-wrap gap-2">
+            {presetQuestions.map((p, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => handlePreset(p.q)}
+                disabled={isTyping}
+                className="text-xs px-3.5 py-1.5 rounded-full border border-border bg-surface-raised text-text-secondary hover:text-text-primary hover:border-accent/40 transition-colors disabled:opacity-50"
+              >
+                {p.q}
+              </button>
+            ))}
+          </div>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/20 text-accent text-[10px] font-medium flex-shrink-0 ml-2 uppercase tracking-editorial-wide">
+            <Zap className="w-3 h-3" />
+            AI-Powered
+          </div>
         </div>
 
         <div
           ref={scrollRef}
-          className="h-80 overflow-y-auto rounded-xl bg-background border border-border p-4 space-y-4 mb-4"
+          className="relative min-h-[320px] max-h-[60vh] overflow-y-auto rounded-xl bg-background border border-border p-4 space-y-4 mb-4 no-scrollbar"
         >
           {messages.length === 0 && (
-            <div className="h-full flex items-center justify-center text-center">
-              <p className="text-sm text-text-muted">
-                Ask a question above, or type your own below. The AI will
-                respond based on the synthesized report.
+            <div className="h-full flex flex-col items-center justify-center text-center gap-3">
+              <span className="text-accent">
+                <TelescopeMark className="w-7 h-7" />
+              </span>
+              <p className="text-sm text-text-muted max-w-xs">
+                Ask a question above, or type your own below. Answers are
+                grounded in this report — Telescope will not invent new
+                evidence.
               </p>
             </div>
           )}
@@ -254,29 +249,31 @@ export function Interrogation({ report }: { report: Report }) {
                 key={m.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25 }}
-                className={`flex gap-3 ${
-                  m.role === 'user' ? 'flex-row-reverse' : ''
-                }`}
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                className={`flex gap-3 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}
               >
                 <div
-                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                     m.role === 'user'
                       ? 'bg-surface-raised text-text-primary border border-border'
-                      : 'bg-accent text-white'
+                      : 'bg-accent text-background'
                   }`}
                 >
-                  {m.role === 'user' ? 'Y' : <Sparkles className="w-4 h-4" />}
+                  {m.role === 'user' ? (
+                    <User className="w-4 h-4" />
+                  ) : (
+                    <Sparkles className="w-4 h-4" />
+                  )}
                 </div>
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
+                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                     m.role === 'user'
                       ? 'bg-surface-raised border border-border text-text-primary'
                       : 'bg-surface-raised border border-accent/30 text-text-primary'
                   }`}
                 >
                   {m.segment && (
-                    <div className="mb-1.5">
+                    <div className="mb-2">
                       <SegmentBadge segment={m.segment} />
                     </div>
                   )}
@@ -293,7 +290,7 @@ export function Interrogation({ report }: { report: Report }) {
               animate={{ opacity: 1, y: 0 }}
               className="flex gap-3"
             >
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-accent flex items-center justify-center text-background">
                 <Sparkles className="w-4 h-4" />
               </div>
               <div className="rounded-2xl px-4 py-3 bg-surface-raised border border-accent/30">
@@ -303,7 +300,7 @@ export function Interrogation({ report }: { report: Report }) {
           )}
         </div>
 
-        <div className="flex gap-2">
+        <div className="relative flex gap-2">
           <input
             type="text"
             value={input}
@@ -311,18 +308,29 @@ export function Interrogation({ report }: { report: Report }) {
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleSend()
             }}
-            placeholder="Ask your own question..."
-            className="flex-1 bg-background border border-border rounded-xl px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent/50"
+            placeholder="Ask your own question…"
+            className="flex-1 bg-background border border-border rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent/50 focus:shadow-glow-accent transition-all"
           />
-          <button
-            type="button"
-            onClick={handleSend}
-            disabled={isTyping || !input.trim()}
-            className="px-4 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-white transition-colors disabled:opacity-50 flex items-center gap-1.5 text-sm font-medium"
-          >
-            <Send className="w-4 h-4" />
-            Send
-          </button>
+          {isTyping ? (
+            <button
+              type="button"
+              onClick={handleStop}
+              className="px-4 py-3 rounded-xl bg-error/10 hover:bg-error/20 border border-error/30 text-error transition-colors flex items-center gap-1.5 text-sm font-medium"
+            >
+              <Square className="w-3.5 h-3.5" />
+              Stop
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={!input.trim()}
+              className="btn-primary !px-5 disabled:opacity-50 disabled:hover:shadow-none"
+            >
+              <Send className="w-4 h-4" />
+              Send
+            </button>
+          )}
         </div>
       </div>
     </section>

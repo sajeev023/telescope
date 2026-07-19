@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -9,59 +9,71 @@ import {
   FileText,
   Lightbulb,
   GitBranch,
-  BarChart3,
-  FileCheck,
   Sparkles,
   AlertCircle,
 } from 'lucide-react'
-import {
-  REPORT_STORAGE_KEY,
-  TELESCOPE_REPORT_STORAGE_KEY,
-  FILES_STORAGE_KEY,
-  TRANSCRIPTS_STORAGE_KEY,
-} from '@/lib/data'
+import { getStoredFiles, saveReportFromStream } from '@/lib/storage'
+import { TelescopeMark } from '@/components/site/Logo'
 
 type StepStatus = 'pending' | 'active' | 'done'
+
+type Phase = 'reading' | 'extracting' | 'clustering' | 'generating'
+
+type ReadingEvent = { file: string; chars: number; words: number; empty: boolean }
 
 type Step = {
   label: string
   icon: React.ReactNode
+  phase: Phase | 'reading'
 }
 
-const STEPS: Step[] = [
-  { label: 'Reading source documents...', icon: <FileText className="w-5 h-5" /> },
-  { label: 'Reading source documents...', icon: <FileText className="w-5 h-5" /> },
-  { label: 'Reading source documents...', icon: <FileText className="w-5 h-5" /> },
-  { label: 'Reading source documents...', icon: <FileText className="w-5 h-5" /> },
-  { label: 'Reading source documents...', icon: <FileText className="w-5 h-5" /> },
-  { label: 'Extracting insights from all sources...', icon: <Lightbulb className="w-5 h-5" /> },
-  { label: 'Clustering insights into themes...', icon: <GitBranch className="w-5 h-5" /> },
-  { label: 'Prioritizing by impact and frequency...', icon: <BarChart3 className="w-5 h-5" /> },
-  { label: 'Verifying insights against source data...', icon: <FileCheck className="w-5 h-5" /> },
-  { label: 'Generating boardroom-ready report...', icon: <Sparkles className="w-5 h-5" /> },
-]
+function buildSteps(fileNames: string[]): Step[] {
+  const readingSteps: Step[] = fileNames.map((name) => ({
+    label: `Reading ${name}`,
+    icon: <FileText className="w-4 h-4" />,
+    phase: 'reading',
+  }))
+
+  return [
+    ...(readingSteps.length > 0
+      ? readingSteps
+      : [
+          {
+            label: 'Reading source documents',
+            icon: <FileText className="w-4 h-4" />,
+            phase: 'reading' as const,
+          },
+        ]),
+    {
+      label: 'Extracting insights from every source',
+      icon: <Lightbulb className="w-4 h-4" />,
+      phase: 'extracting',
+    },
+    {
+      label: 'Clustering insights into themes',
+      icon: <GitBranch className="w-4 h-4" />,
+      phase: 'clustering',
+    },
+    {
+      label: 'Generating boardroom-ready report',
+      icon: <Sparkles className="w-4 h-4" />,
+      phase: 'generating',
+    },
+  ]
+}
 
 type Insight = {
   text: string
-  segment: 'smb' | 'enterprise' | 'freelancer'
+  segment: 'smb' | 'enterprise' | 'freelancer' | 'general'
+  source?: string
+  confidence?: number
 }
 
-const SEGMENT_STYLES: Record<
-  Insight['segment'],
-  { label: string; classes: string }
-> = {
-  smb: {
-    label: 'SMB',
-    classes: 'bg-accent/10 text-accent border-accent/20',
-  },
-  enterprise: {
-    label: 'Enterprise',
-    classes: 'bg-success/10 text-success border-success/20',
-  },
-  freelancer: {
-    label: 'Freelancer',
-    classes: 'bg-warning/10 text-warning border-warning/20',
-  },
+const SEGMENT_STYLES: Record<Insight['segment'], { label: string; classes: string }> = {
+  smb: { label: 'SMB', classes: 'bg-accent/10 text-accent border-accent/20' },
+  enterprise: { label: 'Enterprise', classes: 'bg-success/10 text-success border-success/20' },
+  freelancer: { label: 'Freelancer', classes: 'bg-warning/10 text-warning border-warning/20' },
+  general: { label: 'General', classes: 'bg-info/10 text-info border-info/20' },
 }
 
 export default function ThinkingPage() {
@@ -72,39 +84,29 @@ export default function ThinkingPage() {
   const [customProgress, setCustomProgress] = useState<number | null>(null)
   const [complete, setComplete] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [readingInfo, setReadingInfo] = useState<ReadingEvent | null>(null)
+  const [savedReportId, setSavedReportId] = useState<string | null>(null)
   const hasSavedReportRef = useRef(false)
   const errorRef = useRef<string | null>(null)
 
-  const saveFinalReport = (reportData?: unknown) => {
-    if (hasSavedReportRef.current) return
-    if (typeof window === 'undefined') return
-    if (!reportData) return
+  const [steps] = useState<Step[]>(() => {
+    if (typeof window === 'undefined') return buildSteps([])
+    const stored = getStoredFiles()
+    if (stored.length > 0) {
+      return buildSteps(stored.map((f) => f.name || 'Untitled'))
+    }
+    return buildSteps([])
+  })
 
-    hasSavedReportRef.current = true
-    const json = JSON.stringify(reportData)
-    sessionStorage.setItem(REPORT_STORAGE_KEY, json)
-    sessionStorage.setItem(TELESCOPE_REPORT_STORAGE_KEY, json)
-  }
-
-  // Connect to /api/analyze via SSE
   useEffect(() => {
     const controller = new AbortController()
     errorRef.current = null
 
     const runAnalysis = async () => {
-      let filesData: Array<{ name: string; content: string }> = []
-      if (typeof window !== 'undefined') {
-        const stored =
-          sessionStorage.getItem(FILES_STORAGE_KEY) ||
-          sessionStorage.getItem(TRANSCRIPTS_STORAGE_KEY)
-        if (stored) {
-          try {
-            filesData = JSON.parse(stored)
-          } catch {
-            // ignore
-          }
-        }
-      }
+      const filesData = getStoredFiles().map((f) => ({
+        name: f.name,
+        content: f.content || '',
+      }))
 
       try {
         const response = await fetch('/api/analyze', {
@@ -118,7 +120,13 @@ export default function ThinkingPage() {
         })
 
         if (!response.ok || !response.body) {
-          throw new Error(`SSE endpoint returned status ${response.status}`)
+          // Surface the actual error from the JSON body if we can.
+          let message = `Analysis endpoint returned status ${response.status}`
+          try {
+            const errBody = await response.json()
+            if (errBody?.error) message = errBody.error
+          } catch { /* ignore */ }
+          throw new Error(message)
         }
 
         const reader = response.body.getReader()
@@ -141,7 +149,7 @@ export default function ThinkingPage() {
               const dataStr = trimmed.slice(5).trim()
 
               if (dataStr === '[DONE]') {
-                setCurrentStep(STEPS.length)
+                setCurrentStep(steps.length)
                 setComplete(true)
                 break
               }
@@ -163,19 +171,22 @@ export default function ThinkingPage() {
                   setCurrentStep(parsed.step)
                 }
 
-                if (parsed.insight) {
-                  setLiveInsights((prev) => [...prev, parsed.insight])
-                  setVisibleInsights((n) => n + 1)
+                if (parsed.reading) {
+                  setReadingInfo(parsed.reading as ReadingEvent)
                 }
 
-                if (parsed.report) {
-                  saveFinalReport(parsed.report)
+                if (parsed.insight) {
+                  setLiveInsights((prev) => [...prev, parsed.insight as Insight])
                 }
 
                 if (parsed.complete || parsed.status === 'complete') {
-                  setCurrentStep(STEPS.length)
+                  if (parsed.report) {
+                    hasSavedReportRef.current = true
+                    const id = saveReportFromStream(parsed.report)
+                    if (id) setSavedReportId(id)
+                  }
+                  setCurrentStep(steps.length)
                   setComplete(true)
-                  if (parsed.report) saveFinalReport(parsed.report)
                 }
               } catch {
                 // Ignore raw non-JSON SSE lines
@@ -184,33 +195,16 @@ export default function ThinkingPage() {
           }
         }
 
-        if (!controller.signal.aborted && !errorRef.current) {
-          setCurrentStep(STEPS.length)
-          setComplete(true)
+        if (!controller.signal.aborted && !errorRef.current && !hasSavedReportRef.current) {
+          // Stream ended without a complete event but also without an
+          // error — surface this honestly rather than silently redirecting.
+          setError('The analysis stream ended unexpectedly. Please try again.')
         }
       } catch (err) {
-        if (controller.signal.aborted) {
-          return
-        }
-        console.warn(
-          'Connecting to /api/analyze failed or endpoint unavailable. Running fallback timer.',
-          err
-        )
-        // Smooth fallback progression if SSE endpoint unavailable
-        let step = 0
-        const interval = setInterval(() => {
-          if (controller.signal.aborted) {
-            clearInterval(interval)
-            return
-          }
-          step += 1
-          setCurrentStep(step)
-
-          if (step >= STEPS.length) {
-            clearInterval(interval)
-            setError('Could not connect to the analysis engine. Please check your API configuration and try again.')
-          }
-        }, 1200)
+        if (controller.signal.aborted) return
+        const message = err instanceof Error ? err.message : 'Could not connect to the analysis engine.'
+        console.warn('Analysis failed:', err)
+        setError(message)
       }
     }
 
@@ -219,56 +213,104 @@ export default function ThinkingPage() {
     return () => {
       controller.abort()
     }
-  }, [])
+  }, [steps.length])
 
-  // Insight feed gradual reveal
+  // Drip-roll the insight feed so newly-arrived insights animate in
+  // one at a time instead of appearing in a burst.
   useEffect(() => {
     if (visibleInsights >= liveInsights.length) return
     const t = setTimeout(() => {
       setVisibleInsights((n) => n + 1)
-    }, 500)
+    }, 120)
     return () => clearTimeout(t)
   }, [visibleInsights, liveInsights.length])
 
-  // Redirect after completion
   useEffect(() => {
     if (!complete) return
-    const t = setTimeout(() => {
-      router.push('/report')
-    }, 1500)
-    return () => clearTimeout(t)
-  }, [complete, router])
+    router.push(savedReportId ? `/report?id=${savedReportId}` : '/report')
+  }, [complete, router, savedReportId])
 
   const progress =
     customProgress !== null
       ? customProgress
-      : Math.min((currentStep / STEPS.length) * 100, 100)
+      : Math.min((currentStep / steps.length) * 100, 100)
 
   const statusOf = (i: number): StepStatus => {
+    if (complete) return 'done'
     if (i < currentStep) return 'done'
-    if (i === currentStep && !complete) return 'active'
+    if (i === currentStep) return 'active'
     return 'pending'
   }
 
+  const phaseLabel = (() => {
+    if (complete) return 'complete'
+    if (error) return 'error'
+    if (currentStep < steps.length && steps[currentStep]) {
+      return steps[currentStep].phase
+    }
+    return 'idle'
+  })()
+
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] bg-background px-6 py-10">
-      <div className="max-w-6xl mx-auto">
+    <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden">
+      <div className="absolute inset-0 -z-10">
+        <div
+          className="aurora-glow animate-aurora"
+          style={{
+            left: '20%',
+            top: '10%',
+            width: '50%',
+            height: '60%',
+            background: 'radial-gradient(circle, rgba(232,177,78,0.14), transparent 70%)',
+          }}
+        />
+        <div
+          className="aurora-glow animate-aurora-slow"
+          style={{
+            right: '15%',
+            top: '40%',
+            width: '45%',
+            height: '60%',
+            background: 'radial-gradient(circle, rgba(155,123,216,0.08), transparent 70%)',
+          }}
+        />
+        <div className="absolute inset-0 bg-dotgrid opacity-25" />
+      </div>
+
+      <div className="max-w-[1400px] mx-auto px-6 py-12 lg:py-16">
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="mb-8"
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="mb-10"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 mb-3 rounded-full bg-accent/10 border border-accent/20 text-accent text-sm">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Synthesizing</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-surface/60 backdrop-blur-sm text-xs uppercase tracking-editorial-wide text-text-secondary">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+            Step 02 · Synthesize
           </div>
-          <h1 className="text-3xl font-bold text-text-primary">
-            Telescope is thinking
+          <h1 className="editorial-display text-display-lg mt-6 text-text-primary">
+            Telescope is{' '}
+            <span className="serif-italic text-accent">
+              {complete ? 'done' : 'thinking'}
+            </span>
+            .
           </h1>
-          <p className="text-text-secondary mt-1">
-            Reading your sources and clustering insights in real time.
+          <p className="text-text-secondary mt-4 max-w-xl">
+            Reading every source end-to-end, extracting evidence-backed
+            insights, clustering them into themes, and writing the final
+            report. Insights stream in live as the model works.
           </p>
+
+          <div className="mt-5 inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-surface-raised border border-border">
+            <span className="text-xs font-mono uppercase tracking-editorial-wide text-text-muted">
+              phase
+            </span>
+            <span className="text-xs font-mono text-accent">{phaseLabel}</span>
+            <span className="text-border">·</span>
+            <span className="text-xs font-mono text-text-secondary tabular-nums">
+              {Math.round(progress)}%
+            </span>
+          </div>
         </motion.div>
 
         {error && (
@@ -292,35 +334,48 @@ export default function ThinkingPage() {
           </motion.div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-4">
-            <div className="rounded-2xl border border-border bg-surface p-6">
-              <ul className="space-y-2">
-                {STEPS.map((step, i) => {
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
+          <div className="space-y-5">
+            <div className="card p-6 lg:p-7">
+              <div className="flex items-center justify-between mb-5">
+                <span className="eyebrow">
+                  <span className="text-accent">
+                    <TelescopeMark className="w-4 h-4" />
+                  </span>
+                  Pipeline
+                </span>
+                <span className="text-xs font-mono text-text-muted tabular-nums">
+                  {Math.min(currentStep + (complete ? 0 : 1), steps.length)} /{' '}
+                  {steps.length}
+                </span>
+              </div>
+              <ul className="space-y-1.5">
+                {steps.map((step, i) => {
                   const status = statusOf(i)
+                  const isReading = step.phase === 'reading' && status === 'active' && readingInfo?.file === step.label.replace('Reading ', '')
                   return (
                     <motion.li
                       key={i}
-                      initial={{ opacity: 0.4 }}
+                      initial={{ opacity: 0.5 }}
                       animate={{
-                        opacity: status === 'pending' ? 0.4 : 1,
+                        opacity: status === 'pending' ? 0.45 : 1,
                       }}
                       transition={{ duration: 0.3 }}
-                      className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
+                      className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 ${
                         status === 'active'
-                          ? 'bg-accent/10 border border-accent/30'
+                          ? 'bg-accent/10 border border-accent/30 shadow-glow-accent'
                           : 'border border-transparent'
                       }`}
                     >
-                      <div className="flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center">
+                      <div className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center">
                         {status === 'done' ? (
-                          <CheckCircle2 className="w-6 h-6 text-success" />
+                          <CheckCircle2 className="w-5 h-5 text-success" />
                         ) : status === 'active' ? (
-                          <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center text-white">
-                            <Loader2 className="w-5 h-5 animate-spin" />
+                          <div className="w-9 h-9 rounded-xl bg-accent flex items-center justify-center text-background">
+                            <Loader2 className="w-4 h-4 animate-spin" />
                           </div>
                         ) : (
-                          <div className="w-9 h-9 rounded-lg bg-surface-raised flex items-center justify-center text-text-muted">
+                          <div className="w-9 h-9 rounded-xl bg-surface-raised border border-border flex items-center justify-center text-text-muted">
                             {step.icon}
                           </div>
                         )}
@@ -328,113 +383,155 @@ export default function ThinkingPage() {
                       <span
                         className={`text-sm flex-1 ${
                           status === 'done'
-                            ? 'text-text-secondary line-through'
+                            ? 'text-text-secondary line-through decoration-text-muted/40'
                             : status === 'active'
                               ? 'text-text-primary font-medium'
                               : 'text-text-muted'
                         }`}
                       >
                         {step.label}
+                        {isReading && readingInfo && (
+                          <span className="ml-2 text-xs font-mono text-text-muted">
+                            · {readingInfo.words.toLocaleString()} words · {readingInfo.chars.toLocaleString()} chars
+                          </span>
+                        )}
                       </span>
+                      {status === 'done' && (
+                        <span className="text-xs font-mono text-success">OK</span>
+                      )}
+                      {status === 'active' && (
+                        <span className="text-xs font-mono text-accent animate-pulse">LIVE</span>
+                      )}
                     </motion.li>
                   )
                 })}
               </ul>
             </div>
 
-            {/* Progress bar */}
-            <div className="rounded-2xl border border-border bg-surface p-4">
-              <div className="flex items-center justify-between mb-2 text-xs text-text-secondary">
-                <span>Progress</span>
-                <span>{Math.round(progress)}%</span>
+            <div className="card p-5">
+              <div className="flex items-center justify-between mb-3 text-xs">
+                <span className="text-text-secondary uppercase tracking-editorial-wide">
+                  Synthesis progress
+                </span>
+                <span className="font-mono text-text-primary tabular-nums">
+                  {Math.round(progress)}%
+                </span>
               </div>
-              <div className="h-2 w-full rounded-full bg-surface-raised overflow-hidden">
+              <div className="h-1.5 w-full rounded-full bg-surface-raised overflow-hidden">
                 <motion.div
-                  className="h-full bg-accent rounded-full"
+                  className="h-full rounded-full bg-gradient-to-r from-accent via-accent to-accent/60 relative"
                   animate={{ width: `${progress}%` }}
                   transition={{ duration: 0.4, ease: 'easeOut' }}
-                />
+                >
+                  <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-r from-transparent to-background/40" />
+                </motion.div>
+              </div>
+              <div className="mt-3 flex items-center justify-between text-xs font-mono text-text-muted">
+                <span>read → extract → cluster → generate</span>
+                <span>{complete ? 'complete' : 'streaming'}</span>
               </div>
             </div>
           </div>
 
-          {/* Live insight feed */}
-          <div className="lg:col-span-1">
-            <div className="rounded-2xl border border-border bg-surface p-5 sticky top-20">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
+          <div className="card p-5 lg:p-6 lg:sticky lg:top-24 lg:self-start">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2.5">
+                <span className="w-7 h-7 rounded-lg bg-accent/10 flex items-center justify-center">
                   <Lightbulb className="w-4 h-4 text-accent" />
-                  <h2 className="text-sm font-semibold text-text-primary">
+                </span>
+                <div>
+                  <h2 className="text-sm font-medium text-text-primary">
                     Live insight feed
                   </h2>
+                  <p className="text-xs font-mono text-text-muted mt-0.5">
+                    streaming · {complete ? 'closed' : 'open'}
+                  </p>
                 </div>
-                <span className="text-xs text-text-muted">
-                  {liveInsights.length > 0
-                    ? `${visibleInsights}/${liveInsights.length}`
-                    : '--'}
-                </span>
               </div>
-              <ul className="space-y-2">
-                <AnimatePresence initial={false}>
-                  {liveInsights.slice(0, visibleInsights).map((insight, i) => {
-                    const style = SEGMENT_STYLES[insight.segment] || {
-                      label: 'General',
-                      classes: 'bg-accent/10 text-accent border-accent/20',
-                    }
-                    return (
-                      <motion.li
-                        key={i}
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="rounded-lg border border-border bg-surface-raised px-3 py-2.5"
-                      >
-                        <div className="flex items-start gap-2">
-                          <span
-                            className={`text-[10px] px-1.5 py-0.5 rounded border font-medium flex-shrink-0 ${style.classes}`}
-                          >
-                            {style.label}
-                          </span>
-                          <p className="text-xs text-text-primary leading-relaxed">
-                            {insight.text}
-                          </p>
-                        </div>
-                      </motion.li>
-                    )
-                  })}
-                </AnimatePresence>
-              </ul>
-
-              {liveInsights.length === 0 && !complete && !error && (
-                <p className="text-xs text-text-muted text-center py-8">
-                  Waiting for insights...
-                </p>
-              )}
-
-              <AnimatePresence>
-                {complete && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4 }}
-                    className="mt-4 pt-4 border-t border-border"
-                  >
-                    <div className="flex flex-wrap gap-2 text-xs">
-                      <span className="px-2 py-1 rounded-md bg-accent/10 text-accent border border-accent/20">
-                        {liveInsights.length} insights
-                      </span>
-                      <span className="px-2 py-1 rounded-md bg-success/10 text-success border border-success/20">
-                        Report ready
-                      </span>
-                    </div>
-                    <p className="text-xs text-text-muted mt-3 flex items-center gap-1.5">
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      Redirecting to report...
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              <span className="text-xs text-text-muted font-mono tabular-nums">
+                {liveInsights.length > 0
+                  ? `${visibleInsights}/${liveInsights.length}`
+                  : '--'}
+              </span>
             </div>
+
+            <ul className="space-y-2.5 max-h-[480px] overflow-y-auto no-scrollbar">
+              <AnimatePresence initial={false}>
+                {liveInsights.slice(0, visibleInsights).map((insight, i) => {
+                  const style = SEGMENT_STYLES[insight.segment] || {
+                    label: 'General',
+                    classes: 'bg-accent/10 text-accent border-accent/20',
+                  }
+                  return (
+                    <motion.li
+                      key={i}
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                      className="rounded-xl border border-border bg-surface-raised px-3.5 py-3"
+                    >
+                      <div className="flex items-start gap-2.5">
+                        <span
+                          className={`text-xs px-1.5 py-0.5 rounded border font-medium flex-shrink-0 ${style.classes}`}
+                        >
+                          {style.label}
+                        </span>
+                        <p className="text-sm text-text-primary leading-relaxed">
+                          {insight.text}
+                        </p>
+                      </div>
+                      {insight.source && (
+                        <p className="text-xs text-text-muted mt-2 font-mono pl-2">
+                          — {insight.source}
+                          {typeof insight.confidence === 'number' && (
+                            <span className="ml-2 text-text-muted">
+                              · conf {insight.confidence.toFixed(2)}
+                            </span>
+                          )}
+                        </p>
+                      )}
+                    </motion.li>
+                  )
+                })}
+              </AnimatePresence>
+            </ul>
+
+            {liveInsights.length === 0 && !complete && !error && (
+              <div className="py-12 text-center">
+                <motion.div
+                  animate={{ opacity: [0.3, 1, 0.3] }}
+                  transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+                  className="inline-flex items-center gap-2 text-sm text-text-muted"
+                >
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Waiting for the first insight…
+                </motion.div>
+              </div>
+            )}
+
+            <AnimatePresence>
+              {complete && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                  className="mt-5 pt-5 border-t border-border"
+                >
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <span className="px-2 py-1 rounded-md bg-accent/10 text-accent border border-accent/20 font-mono">
+                      {liveInsights.length} insights
+                    </span>
+                    <span className="px-2 py-1 rounded-md bg-success/10 text-success border border-success/20 font-mono">
+                      Report ready
+                    </span>
+                  </div>
+                  <p className="text-xs text-text-muted mt-3 flex items-center gap-1.5">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Redirecting to report…
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>

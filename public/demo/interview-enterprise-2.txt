@@ -1,0 +1,28 @@
+INTERVIEW TRANSCRIPT: Enterprise Customer Research
+Date: July 17, 2026
+Participant: Dr. Robert Kim, CTO at Nexus Health Systems (5,100 employees)
+Interviewer: Research Team
+
+Q: You recently completed your first year with us. How would you summarize the experience?
+
+Robert: Transformative in some areas, disappointing in others. The good news is that our clinical reporting cycle went from 12 days to 2 days. That's a 6x improvement that directly impacts patient care decisions. The bad news is that we've had 3 production incidents in the last quarter that were traced back to undocumented API changes on your side.
+
+Q: Can you elaborate on the API stability issues?
+
+Robert: This is actually my biggest concern right now. In March, you changed the authentication flow for the reporting API without sufficient notice. Our integration broke at 2 AM and our on-call team spent 4 hours debugging before we realized it was a change on your end. The changelog was published the next morning. That's not acceptable for healthcare infrastructure. We need a 30-day deprecation window and a dedicated status page for API changes.
+
+Q: What about the product itself?
+
+Robert: The core analytics engine is best-in-class. We evaluated Tableau, Looker, and Power BI, and your natural language query capability is genuinely ahead of all of them. Our clinicians can ask questions in plain English and get accurate answers without needing a data analyst. That's the killer feature for us.
+
+Q: Where does the product fall short?
+
+Robert: The administration experience is clunky. Adding a new department with its own data isolation rules requires about 40 clicks across 6 different screens. We have 47 departments. You can do the math on how painful that is. We've actually built internal scripts to automate user provisioning through your API because the UI is unusable at our scale.
+
+Q: What's on your wishlist?
+
+Robert: Three things. First, bulk administration - let us manage users, departments, and permissions through configuration files or Terraform providers. Second, SSO with Azure AD - we're still using SAML and it's fragile. Third, a dedicated healthcare compliance package with HIPAA BAAs that don't require custom legal negotiation. Every healthcare customer needs this, so make it a checkbox, not a contract.
+
+Q: Are you considering alternatives?
+
+Robert: We're always evaluating. Your NLP capabilities are hard to replicate, so you have some moat. But if the API stability doesn't improve by Q4, we'll have to reconsider. Healthcare can't tolerate surprise breaking changes.

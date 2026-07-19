@@ -1,38 +1,325 @@
-﻿@tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   html {
     @apply h-full;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "ss01", "cv11", "cv02";
   }
 
   body {
     @apply h-full bg-background text-text-primary antialiased;
+    font-family: var(--font-inter-tight), system-ui, sans-serif;
+    background-color: #0A0A0B;
+    background-image:
+      radial-gradient(60rem 60rem at 80% -10%, rgba(232,177,78,0.06), transparent 60%),
+      radial-gradient(50rem 50rem at -10% 30%, rgba(155,123,216,0.04), transparent 60%);
+    background-attachment: fixed;
   }
 
-  #__next {
-    @apply h-full flex flex-col;
+  ::selection {
+    background: rgba(232,177,78,0.28);
+    color: #F5F1E8;
+  }
+
+  h1, h2, h3, .font-serif {
+    font-feature-settings: "ss01", "ss02", "cv11";
+  }
+
+  /* Editorial serif italic accent */
+  .serif-italic {
+    font-family: var(--font-instrument-serif), Georgia, serif;
+    font-style: italic;
+  }
+}
+
+@layer components {
+  .editorial-display {
+    @apply font-serif tracking-editorial-tight;
+    font-weight: 400;
+  }
+
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-[11px] uppercase tracking-editorial-wide text-text-secondary font-medium;
+  }
+
+  .card {
+    @apply rounded-2xl bg-surface border border-border;
+  }
+
+  .card-raised {
+    @apply rounded-2xl bg-surface-raised border border-border shadow-elev-2;
+  }
+
+  .hairline {
+    @apply border-border;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-accent text-background font-medium text-sm transition-all duration-300 ease-editorial hover:bg-accent-hover hover:shadow-glow-accent active:scale-[0.98];
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-surface text-text-primary font-medium text-sm transition-all duration-300 ease-editorial hover:border-accent/40 hover:bg-surface-raised active:scale-[0.98];
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border;
+  }
+
+  /* Subtle dotted grid background for hero / instrument panels */
+  .bg-dotgrid {
+    background-image: radial-gradient(rgba(245,241,232,0.05) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  .bg-linegrid {
+    background-image:
+      linear-gradient(to right, rgba(245,241,232,0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(245,241,232,0.03) 1px, transparent 1px);
+    background-size: 64px 64px;
+  }
+
+  /* Animated gradient border */
+  .gradient-border {
+    position: relative;
+    border-radius: inherit;
+  }
+  .gradient-border::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(232,177,78,0.4), rgba(155,123,216,0.15), transparent 60%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .text-gradient-amber {
+    background: linear-gradient(180deg, #F5F1E8 0%, #E8B14E 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .text-gradient-cream {
+    background: linear-gradient(180deg, #F5F1E8 0%, #A7A29A 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Shimmer text used for "AI thinking" moments */
+  .shimmer-text {
+    background: linear-gradient(90deg, rgba(245,241,232,0.4) 0%, rgba(245,241,232,1) 50%, rgba(245,241,232,0.4) 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 2.5s linear infinite;
+  }
+
+  /* Soft aurora glow for hero background */
+  .aurora-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.7;
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
+
+  /* Hairline divider with editorial dot */
+  .editorial-rule {
+    position: relative;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(245,241,232,0.12) 20%, rgba(245,241,232,0.12) 80%, transparent);
+  }
+  .editorial-rule::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #E8B14E;
+    transform: translate(-50%, -50%);
   }
 }
 
 @layer utilities {
-  /* Custom scrollbar styling */
   ::-webkit-scrollbar {
-    @apply w-2 h-2;
+    width: 10px;
+    height: 10px;
   }
-
   ::-webkit-scrollbar-track {
-    @apply bg-surface;
+    background: transparent;
   }
-
   ::-webkit-scrollbar-thumb {
-    @apply bg-border rounded-full hover:bg-text-secondary transition-colors;
+    background: rgba(245,241,232,0.08);
+    border-radius: 99px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
   }
-
-  /* Firefox scrollbar */
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(232,177,78,0.4);
+    background-clip: padding-box;
+    border: 2px solid transparent;
+  }
   * {
-    scrollbar-color: theme('colors.border') theme('colors.surface');
+    scrollbar-color: rgba(245,241,232,0.08) transparent;
     scrollbar-width: thin;
   }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .text-balance { text-wrap: balance; }
+  .text-pretty { text-wrap: pretty; }
+
+  .mask-fade-r {
+    -webkit-mask-image: linear-gradient(to right, black 70%, transparent 100%);
+    mask-image: linear-gradient(to right, black 70%, transparent 100%);
+  }
+  .mask-fade-b {
+    -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+  }
+
+  .will-change-transform { will-change: transform; }
+  .will-change-opacity { will-change: opacity; }
+
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Visible keyboard focus — high contrast amber ring on every focusable
+     element. Default outline is invisible against the dark surface. */
+  :focus-visible {
+    outline: 2px solid #E8B14E;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Skip link — hidden until focused, then floats top-left. */
+  .skip-link {
+    position: absolute;
+    left: 0.5rem;
+    top: 0.5rem;
+    z-index: 100;
+    padding: 0.5rem 0.875rem;
+    background: #E8B14E;
+    color: #0A0A0B;
+    border-radius: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    transform: translateY(-150%);
+    transition: transform 0.2s ease;
+  }
+  .skip-link:focus {
+    transform: translateY(0);
+  }
+
+  #main-content {
+    scroll-margin-top: 64px;
+  }
+}
+
+/* Print styles for PDF export — boardroom-ready cover page and clean
+   typographic hierarchy. */
+@media print {
+  nav, .no-print, button:not(.keep-print), input:not(.keep-print),
+  [class*="Interrogation"] section:last-of-type {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+
+  /* Force all sections to full opacity — whileInView animations leave
+     below-the-fold sections at opacity:0 when printing without scrolling. */
+  section, [class*="motion"] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .bg-background, .bg-surface, .bg-surface-raised, .bg-surface-elevated {
+    background: white !important;
+    border-color: #e5e7eb !important;
+  }
+
+  .text-text-primary, .text-text-secondary { color: #111827 !important; }
+  .text-text-muted { color: #4b5563 !important; }
+  .text-accent { color: #B8841F !important; }
+  .border-border { border-color: #e5e7eb !important; }
+
+  .rounded-4xl, .rounded-3xl, .rounded-2xl, .rounded-xl, .rounded-lg {
+    border-radius: 0.5rem !important;
+  }
+
+  section { break-inside: avoid; margin-bottom: 1.5rem !important; padding: 1rem !important; }
+  h1 { font-size: 1.5rem !important; margin-bottom: 0.5rem !important; }
+  h2 { font-size: 1.25rem !important; }
+  .max-w-6xl, .max-w-7xl, .max-w-\[1400px\] { max-width: 100% !important; }
+
+  /* Report cover page — targeted by explicit id, not fragile DOM nesting. */
+  #report-cover {
+    page-break-after: always;
+    padding-top: 4cm !important;
+    padding-bottom: 4cm !important;
+  }
+  #report-cover::after {
+    content: "Telescope · AI Research Synthesis";
+    display: block;
+    margin-top: 1.5cm;
+    font-size: 9pt;
+    color: #6b7280;
+    text-align: center;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* Page numbers in the bottom-right corner of every printed page. */
+  @page {
+    margin: 1.8cm 1.5cm 2cm 1.5cm;
+    size: A4;
+    @bottom-right {
+      content: "Page " counter(page) " of " counter(pages);
+      font-size: 9pt;
+      color: #6b7280;
+    }
+    @bottom-left {
+      content: "Telescope · Confidential";
+      font-size: 9pt;
+      color: #6b7280;
+    }
+  }
+
+  /* Avoid breaking inside findings / quotes / theme cards. */
+  .card { break-inside: avoid; }
+  /* Quotes should not split across pages. */
+  blockquote, figure { break-inside: avoid; }
+  /* Headings should not appear as the last thing on a page. */
+  h1, h2, h3 { break-after: avoid; }
 }

@@ -17,16 +17,22 @@ export function SegmentBadge({ segment }: { segment: Segment }) {
       ? 'SMB'
       : segment === 'enterprise'
         ? 'Enterprise'
-        : 'Freelancer'
+        : segment === 'freelancer'
+          ? 'Freelancer'
+          : 'General'
   return (
     <span
       className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border"
       style={{
         color,
-        backgroundColor: hexAlpha(color, 0.18),
-        borderColor: hexAlpha(color, 0.3),
+        backgroundColor: hexAlpha(color, 0.14),
+        borderColor: hexAlpha(color, 0.28),
       }}
     >
+      <span
+        className="w-1 h-1 rounded-full mr-1.5"
+        style={{ backgroundColor: color }}
+      />
       {label}
     </span>
   )
@@ -36,11 +42,11 @@ export function SeverityBadge({ severity }: { severity: Severity }) {
   const color = getSeverityColor(severity)
   return (
     <span
-      className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium uppercase tracking-wide border"
+      className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium uppercase tracking-editorial-wide border"
       style={{
         color,
-        backgroundColor: hexAlpha(color, 0.18),
-        borderColor: hexAlpha(color, 0.3),
+        backgroundColor: hexAlpha(color, 0.12),
+        borderColor: hexAlpha(color, 0.28),
       }}
     >
       {severity}
@@ -52,11 +58,11 @@ export function EffortBadge({ effort }: { effort: Effort }) {
   const color = getEffortColor(effort)
   return (
     <span
-      className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium uppercase tracking-wide border"
+      className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium uppercase tracking-editorial-wide border"
       style={{
         color,
-        backgroundColor: hexAlpha(color, 0.18),
-        borderColor: hexAlpha(color, 0.3),
+        backgroundColor: hexAlpha(color, 0.12),
+        borderColor: hexAlpha(color, 0.28),
       }}
     >
       {effort} effort
@@ -67,16 +73,25 @@ export function EffortBadge({ effort }: { effort: Effort }) {
 export function SectionHeading({
   icon,
   label,
+  index,
 }: {
   icon: React.ReactNode
   label: string
+  index?: string
 }) {
   return (
-    <div className="flex items-center gap-2 mb-4">
-      <span className="text-text-secondary">{icon}</span>
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
-        {label}
-      </h2>
+    <div className="flex items-baseline justify-between mb-5">
+      <div className="flex items-center gap-3">
+        <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-surface-raised border border-border flex items-center justify-center text-text-secondary">
+          {icon}
+        </span>
+        <h2 className="text-xs font-semibold uppercase tracking-editorial-wide text-text-secondary">
+          {label}
+        </h2>
+      </div>
+      {index && (
+        <span className="text-[10px] font-mono text-text-muted">{index}</span>
+      )}
     </div>
   )
 }

@@ -103,16 +103,97 @@ export interface ReportGenerationInput {
   segmentsDetected: string[]
   sourceCount: number
   documents?: Array<{ name: string; content: string }>
+  themes?: ClusteredTheme[]
+}
+
+/**
+ * A theme produced by the clustering call. The report-generation call
+ * receives these as input and turns them into the final Theme objects
+ * in the report, so the "Clustering" pipeline step is real work, not
+ * a setTimeout placeholder.
+ */
+export interface ClusteredTheme {
+  name: string
+  description: string
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'positive'
+  affected_segments: string[]
+  insight_indices: number[]
+  key_quote_texts: string[]
+}
+
+export interface ClusteringInput {
+  insights: ExtractedInsight[]
+  segmentsDetected: string[]
+}
+
+export function buildClusteringPrompt(input: ClusteringInput): string {
+  const { insights, segmentsDetected } = input
+  const insightsJson = JSON.stringify(
+    insights.map((ins, i) => ({
+      index: i,
+      text: ins.text,
+      segment: ins.segment,
+      source: ins.source,
+      confidence: ins.confidence,
+    })),
+    null,
+    2,
+  )
+
+  return `Cluster the extracted insights into themes. A theme must be derived from MULTIPLE (2+) supporting insights. If fewer than two insights can be grouped together, return an empty themes array.
+
+EXTRACTED INSIGHTS:
+${insightsJson}
+
+SEGMENTS DETECTED: ${segmentsDetected.join(', ') || 'general'}
+
+TASK:
+1. Group insights that share a concrete underlying concern, pain, or strength. Do not group by segment alone — segment is a facet, not a theme.
+2. For each cluster, derive a short, specific theme name (3-6 words). "Onboarding friction" is good. "Issues" is bad.
+3. Write a one-sentence description of what the cluster is about, grounded in the insight texts.
+4. Assign a severity derived from the evidence:
+   - critical = repeated, specific, high-stakes complaints (production outages, churn risk, lost revenue)
+   - high = repeated complaints with clear business impact
+   - medium = real friction with moderate impact
+   - low = mentioned but not blocking
+   - positive = strengths, retention drivers, moats (only cluster positive insights together if 2+ clearly share a strength theme)
+5. affected_segments: only segments that appear in the cluster's insights, drawn from SEGMENTS DETECTED.
+6. insight_indices: the exact index numbers from the EXTRACTED INSIGHTS array that belong to this cluster. Every insight should belong to exactly one cluster, but small/rare insights that don't fit any cluster can be left out.
+7. key_quote_texts: 1-3 short verbatim phrases drawn directly from the insight texts that best represent the cluster. These must be exact substrings of insight.text values.
+
+RULES:
+- Output only valid JSON. No prose, no markdown.
+- If there are fewer than 2 insights total, return {"themes": []}.
+- Do not invent insights that aren't in the input. Do not invent quotes that aren't substrings of insight texts.
+- 2-6 themes is the right number for a 10-30 insight corpus. Fewer for smaller corpora. More for larger. Scale to evidence.
+
+OUTPUT FORMAT:
+{
+  "themes": [
+    {
+      "name": string,
+      "description": string,
+      "severity": "critical"|"high"|"medium"|"low"|"positive",
+      "affected_segments": string[],
+      "insight_indices": number[],
+      "key_quote_texts": string[]
+    }
+  ]
+}`
 }
 
 export function buildReportGenerationPrompt(input: ReportGenerationInput): string {
-  const { projectName, insights, segmentsDetected, sourceCount, documents } = input
+  const { projectName, insights, segmentsDetected, sourceCount, documents, themes } = input
   const insightsJson = JSON.stringify(insights, null, 2)
   const today = new Date().toISOString().split('T')[0]
 
   const documentsText = documents && documents.length > 0
     ? `\nORIGINAL DOCUMENTS:\n${documents.map((d) => `=== ${d.name} ===\n${d.content}`).join('\n\n')}`
     : ''
+
+  const themesText = themes && themes.length > 0
+    ? `\nPRE-CLUSTERED THEMES (produced by a separate clustering step — use these, do not re-cluster):\n${JSON.stringify(themes, null, 2)}\n\nThe themes above are authoritative. Build the report's themes[] array from them. For each theme, find the supporting insights by matching insight_indices against the EXTRACTED INSIGHTS array. ${documentsText ? 'Pull key_quotes verbatim from the ORIGINAL DOCUMENTS using the key_quote_texts as search anchors.' : 'Use the key_quote_texts from the pre-clustered themes or insight texts as the key_quotes.'}`
+    : '\nNo pre-clustered themes were provided. Derive themes from the insights using the standard 2+ supporting insights rule.'
 
   const schema = `{
   "report_metadata": {
@@ -125,7 +206,7 @@ export function buildReportGenerationPrompt(input: ReportGenerationInput): strin
   },
   "executive_summary": string,
   "key_findings": [
-    { "rank": number, "finding": string, "evidence": string, "affected_segments": string[], "severity": "critical"|"high"|"medium"|"low" }
+    { "rank": number, "finding": string, "evidence": string, "affected_segments": string[], "severity": "critical"|"high"|"medium"|"low", "sources": string[] }
   ],
   "segment_breakdown": {
     "smb": { "top_concern": string, "summary": string, "key_quote": string },
@@ -155,7 +236,7 @@ INSIGHTS PROVIDED: ${insights.length}
 SEGMENTS DETECTED: ${segmentsDetected.join(', ')}
 
 EXTRACTED INSIGHTS:
-${insightsJson}${documentsText}
+${insightsJson}${documentsText}${themesText}
 
 REPORT GENERATION RULES — READ AND FOLLOW EVERY RULE:
 
@@ -204,6 +285,7 @@ key_findings:
 - Rank findings by strength of evidence only, not by fabricated importance
 - If there is only enough evidence for one finding, produce one finding
 - The evidence field must contain the actual supporting statements
+- sources: list the document names that support this finding (e.g., ["interview-smb-1.txt", "interview-enterprise-2.txt"])
 - affected_segments must reference segments from SEGMENTS DETECTED only
 - severity: derive from evidence (repeated strong complaints = "high", single mention = "low")
 - If no findings can be made, return an empty array
@@ -298,20 +380,6 @@ export function parseJsonResponse<T>(raw: string): T {
   }
 }
 
-export function buildPrompt(messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>): string {
-  return messages.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join('\n\n')
-}
-
-export function createExtractionMessages(input: ExtractionInput): Array<{ role: 'system' | 'user'; content: string }> {
-  return [
-    { role: 'system', content: MODEL_CONFIG.systemPrompt },
-    { role: 'user', content: buildExtractionPrompt(input) },
-  ]
-}
-
-export function createReportGenerationMessages(input: ReportGenerationInput): Array<{ role: 'system' | 'user'; content: string }> {
-  return [
-    { role: 'system', content: MODEL_CONFIG.systemPrompt },
-    { role: 'user', content: buildReportGenerationPrompt(input) },
-  ]
-}
+// Note: createExtractionMessages / createReportGenerationMessages /
+// buildPrompt helpers were removed — the API routes assemble messages
+// inline, which keeps the call sites next to the prompts they use.
