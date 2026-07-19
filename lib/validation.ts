@@ -32,9 +32,9 @@ const segmentProfileSchema = z.object({
 })
 
 const segmentBreakdownSchema = z.object({
-  smb: segmentProfileSchema,
-  enterprise: segmentProfileSchema,
-  freelancer: segmentProfileSchema,
+  smb: segmentProfileSchema.optional(),
+  enterprise: segmentProfileSchema.optional(),
+  freelancer: segmentProfileSchema.optional(),
   general: segmentProfileSchema.optional(),
 })
 
