@@ -4,7 +4,6 @@ import { env } from '@/lib/env'
 import {
   MODEL_CONFIG,
   buildExtractionPrompt,
-  buildClusteringPrompt,
   buildReportGenerationPrompt,
   parseJsonResponse,
   ClusteredTheme,
@@ -220,43 +219,13 @@ export async function POST(req: NextRequest) {
           return
         }
 
-        // PHASE 3: Clustering. A real LLM call that takes the extracted
-        // insights and produces theme clusters. This is what the
-        // "Clustering" pipeline step actually does — not a setTimeout.
+        // PHASE 3: Clustering. Disabling the extra LLM call to stay within Vercel's 60-90s execution limit.
+        // The Phase 4 report generation prompt is fully capable of auto-clustering the insights.
         const clusterStep = totalFiles + 1
         sendJSON({ step: clusterStep, progress: Math.round(((clusterStep + 1) / totalSteps) * 100) })
 
         let clusteredThemes: ClusteredTheme[] = []
-        try {
-          const clusterPrompt = buildClusteringPrompt({
-            insights: extractedInsights,
-            segmentsDetected: detectedSegments,
-          })
-          let clusterRaw = ''
-          console.log('[POST /api/analyze] Starting Phase 3: AI Clustering.')
-          await generateStream(
-            {
-              messages: [
-                { role: 'system', content: MODEL_CONFIG.systemPrompt },
-                { role: 'user', content: clusterPrompt },
-              ],
-              temperature: MODEL_CONFIG.temperature,
-              topP: MODEL_CONFIG.top_p,
-              maxTokens: 4096,
-            },
-            (chunk) => { clusterRaw += chunk },
-            STREAM_DEADLINE_MS,
-          )
-          const parsed = parseJsonResponse<{ themes: ClusteredTheme[] }>(clusterRaw)
-          if (parsed && Array.isArray(parsed.themes)) {
-            clusteredThemes = parsed.themes
-            console.log(`[POST /api/analyze] Theme clustering complete. Clustered count: ${clusteredThemes.length}`)
-          }
-        } catch (clusterErr) {
-          console.error('[API Analyze] Clustering failed (continuing without pre-clustering):', clusterErr)
-          // Clustering is best-effort — if it fails, the report
-          // generation call will derive themes itself.
-        }
+        console.log('[POST /api/analyze] Phase 3 LLM call skipped to fit within Vercel execution limits.')
 
         // Derive detected segments from actual extracted insights.
         const actualSegments = [...new Set(extractedInsights.map((ins) => ins.segment).filter(Boolean))]
